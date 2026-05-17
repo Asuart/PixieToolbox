@@ -4,6 +4,7 @@
 #include "Utils/Log.h"
 #include "Time/EngineTime.h"
 #include "Time/GlobalTimer.h"
+#include "UserInput/UserInput.h"
 
 MainWindow::MainWindow(const std::string& name, glm::ivec2 resolution)
     : m_resolution(resolution) {
@@ -69,10 +70,11 @@ void MainWindow::Start() {
         DrawFrame();
         SwapBuffers();
         m_application->OnAfterDrawFrame();
+
+        UserInput::Reset();
         SDL_Event sdlEvent;
-        if (SDL_PollEvent(&sdlEvent)) {
+        while (SDL_PollEvent(&sdlEvent)) {
             HandleEvent(sdlEvent);
-            m_application->HandleEvent(sdlEvent);
         }
 
         GlobalTimer::StopTimer("Frame Time");
@@ -87,7 +89,11 @@ void MainWindow::HandleEvent(const SDL_Event& event) {
     if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(m_window)) {
     	Close();
     }
+
+    UserInput::HandleEvent(event);
+
     m_ui->HandleEvent(event);
+    m_application->HandleEvent(event);
 }
 
 void MainWindow::SwapBuffers() {

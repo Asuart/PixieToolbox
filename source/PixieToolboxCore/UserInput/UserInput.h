@@ -24,11 +24,7 @@ public:
 
 	static void Reset();
 
-	static void SetInputWindow(SDL_Window* window);
-
+	static void HandleEvent(const SDL_Event& event);
 	static int32_t GetKey(int32_t keyCode);
 	static int32_t GetMouseButton(int32_t mouseButton);
-
-protected:
-	static SDL_Window* window;
 };

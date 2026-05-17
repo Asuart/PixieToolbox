@@ -23,6 +23,7 @@ void PixieToolbox::OnStart() {
 }
 
 void PixieToolbox::OnClose() {
+	
 }
 
 void PixieToolbox::OnBeforeDrawFrame() {
@@ -39,6 +40,6 @@ void PixieToolbox::OnAfterDrawFrame() {
 
 }
 
-void PixieToolbox::HandleEvent(SDL_Event& sdlEvent) {
+void PixieToolbox::HandleEvent(const SDL_Event& sdlEvent) {
 
 }

@@ -1,7 +1,5 @@
 #include "UserInput.h"
 
-SDL_Window* UserInput::window = nullptr;
-
 bool UserInput::buttonPressed = false;
 int32_t UserInput::key = 0;
 int32_t UserInput::scancode = 0;
@@ -30,15 +28,25 @@ void UserInput::Reset() {
 	mouseScrollY = 0;
 }
 
+void UserInput::HandleEvent(const SDL_Event& event) {
+	if (event.type == SDL_MOUSEMOTION) {
+		mouseX = event.motion.x;
+		mouseY = event.motion.y;
+		mouseDeltaX = event.motion.xrel;
+		mouseDeltaY = event.motion.yrel;
+	}
+}
+
 int32_t UserInput::GetKey(int32_t keyCode) {
 	const Uint8* state = SDL_GetKeyboardState(NULL);
 	return state[keyCode];
 }
 
 int32_t UserInput::GetMouseButton(int32_t mouseButton) {
+	int32_t x, y;
+	Uint32 buttons = SDL_GetMouseState(&x, &y);
+	if ((buttons & SDL_BUTTON(mouseButton)) != 0) {
+		return 1;
+	}
 	return 0;
-}
-
-void UserInput::SetInputWindow(SDL_Window* _window) {
-	window = _window;
 }

@@ -8,7 +8,7 @@ FreeCameraController::FreeCameraController(Camera& camera, float moveSpeed) :
 
 bool FreeCameraController::HandleUserInput() {
 	const float scale = 100.0f * (UserInput::GetKey(SDL_SCANCODE_LSHIFT) ? 0.1f : 1.0f) * Time::deltaTime * m_moveSpeed;
-	const float rotationScale = (UserInput::GetKey(SDL_SCANCODE_LSHIFT) ? 0.1f : 1.0f) * Time::deltaTime;
+	const float rotationScale = (UserInput::GetKey(SDL_SCANCODE_LSHIFT) ? 0.05f : 0.2f) * Time::deltaTime;
 	bool moved = false;
 	
 	Transform& transform = m_camera.GetTransform();

@@ -14,9 +14,9 @@ public:
 protected:
 	bool m_focused = false;
 	FrameBufferHandle m_frameBuffer;
+	MeshHandle m_gridMesh;
 	ShaderHandle m_terrainShader;
-	MeshHandle m_terrainMesh;
-	TextureHandle m_terrainHeight;
+	ShaderHandle m_waterShader;
 	Camera m_camera;
 	FreeCameraController m_cameraController;
 

@@ -14,5 +14,5 @@ protected:
 	void OnClose() override;
 	void OnBeforeDrawFrame() override;
 	void OnAfterDrawFrame() override;
-	void HandleEvent(SDL_Event& sdlEvent) override;
+	void HandleEvent(const SDL_Event& sdlEvent) override;
 };

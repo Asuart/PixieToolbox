@@ -11,7 +11,7 @@ protected:
 	virtual void OnClose() {}
 	virtual void OnBeforeDrawFrame() {}
 	virtual void OnAfterDrawFrame() {}
-	virtual void HandleEvent(SDL_Event& sdlEvent) {}
+	virtual void HandleEvent(const SDL_Event& sdlEvent) {}
 
 	friend class MainWindow;
 	friend class MainWindowOpenGL;

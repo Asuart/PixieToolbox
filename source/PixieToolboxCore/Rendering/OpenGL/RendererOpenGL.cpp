@@ -11,6 +11,7 @@ RendererOpenGL::RendererOpenGL() {
 
 	glEnable(GL_DEBUG_OUTPUT);
 	glDebugMessageCallback(OpenglCallbackHandler, 0);
+	glEnable(GL_BLEND);  
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
@@ -299,7 +300,7 @@ ShaderStorageBufferHandle RendererOpenGL::LoadShaderStorageBuffer(uint8_t* data,
 	glGenBuffers(1, &entry.id);
 
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, entry.id);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, size, (GLvoid*)data, GL_DYNAMIC_COPY);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, size, (GLvoid*)data, GL_DYNAMIC_DRAW);
 
 	m_shaderStorageBuffers.push_back(entry);
 	return ShaderStorageBufferHandle(m_shaderStorageBuffers.size() - 1);
@@ -310,7 +311,7 @@ void RendererOpenGL::LoadShaderStorageBuffer(ShaderStorageBufferHandle handle, u
 	entry.size = size;
 
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, entry.id);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, size, (GLvoid*)data, GL_DYNAMIC_COPY);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, size, (GLvoid*)data, GL_DYNAMIC_DRAW);
 }
 
 void RendererOpenGL::BindShaderStorageBuffer(ShaderStorageBufferHandle handle, uint32_t index) {
