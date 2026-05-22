@@ -48,7 +48,7 @@ void main() {
 		float deltaHeight = cellHeight - cellheightLeft;
 		float averageWaterHeight = (waterHeight + waterHeightLeft) * 0.5f; 
 		float crossSection = averageWaterHeight * PREPROC_CELL_SIZE_Y;
-		outflowLeft = max(0.0f, outflowLeft + deltaHeight * crossSection * PREPROC_DT * PREPROC_GRAVITY / PREPROC_PIPE_LENGTH);
+		outflowLeft = max(0.0f, outflowLeft * PREPROC_FLUX_DAMPING + deltaHeight * crossSection * PREPROC_DT * PREPROC_GRAVITY / PREPROC_PIPE_LENGTH);
 	}
 
 	if (((index + 1) % PREPROC_RESOLUTION_X) == 0) {
@@ -60,7 +60,7 @@ void main() {
 		float deltaHeight = cellHeight - cellheightRight;
 		float averageWaterHeight = (waterHeight + waterHeightRight) * 0.5f;
 		float crossSection = averageWaterHeight * PREPROC_CELL_SIZE_Y;
-		outflowRight = max(0.0f, outflowRight + deltaHeight * crossSection * PREPROC_DT * PREPROC_GRAVITY / PREPROC_PIPE_LENGTH);
+		outflowRight = max(0.0f, outflowRight * PREPROC_FLUX_DAMPING + deltaHeight * crossSection * PREPROC_DT * PREPROC_GRAVITY / PREPROC_PIPE_LENGTH);
 	}
 
 	if ((index / PREPROC_RESOLUTION_X) == 0) {
@@ -72,7 +72,7 @@ void main() {
 		float deltaHeight = cellHeight - cellheightTop;
 		float averageWaterHeight = (waterHeight + waterHeightTop) * 0.5f;
 		float crossSection = averageWaterHeight * PREPROC_CELL_SIZE_X;
-		outflowTop = max(0.0f, outflowTop + deltaHeight * crossSection * PREPROC_DT * PREPROC_GRAVITY / PREPROC_PIPE_LENGTH);
+		outflowTop = max(0.0f, outflowTop * PREPROC_FLUX_DAMPING + deltaHeight * crossSection * PREPROC_DT * PREPROC_GRAVITY / PREPROC_PIPE_LENGTH);
 	}
 
 	if (((index / PREPROC_RESOLUTION_X) + 1) == PREPROC_RESOLUTION_Y) {
@@ -84,23 +84,24 @@ void main() {
 		float deltaHeight = cellHeight - cellheightBottom;
 		float averageWaterHeight = (waterHeight + waterHeightBottom) * 0.5f;
 		float crossSection = averageWaterHeight * PREPROC_CELL_SIZE_X;
-		outflowBottom = max(0.0f, outflowBottom + deltaHeight * crossSection * PREPROC_DT * PREPROC_GRAVITY / PREPROC_PIPE_LENGTH);
+		outflowBottom = max(0.0f, outflowBottom * PREPROC_FLUX_DAMPING + deltaHeight * crossSection * PREPROC_DT * PREPROC_GRAVITY / PREPROC_PIPE_LENGTH);
 	}
 
-	float totalOutflow = outflowLeft + outflowRight + outflowTop + outflowBottom;
 	float maxOutPerFace = waterHeight * PREPROC_CELL_AREA / PREPROC_DT;
 
-	outflowLeft  = min(outflowLeft,  maxOutPerFace);
+	outflowLeft = min(outflowLeft, maxOutPerFace);
 	outflowRight = min(outflowRight, maxOutPerFace);
-	outflowTop   = min(outflowTop,   maxOutPerFace);
-	outflowBottom= min(outflowBottom,maxOutPerFace);
+	outflowTop = min(outflowTop, maxOutPerFace);
+	outflowBottom = min(outflowBottom,maxOutPerFace);
+
+	float totalOutflow = outflowLeft + outflowRight + outflowTop + outflowBottom;
 
 	if (totalOutflow > maxOutPerFace) {
 		float scale = maxOutPerFace / totalOutflow;
-		outflowLeft  *= scale;
+		outflowLeft *= scale;
 		outflowRight *= scale;
-		outflowTop   *= scale;
-		outflowBottom*= scale;
+		outflowTop *= scale;
+		outflowBottom *= scale;
 	}
 
 	outflow_flux_left[index] = outflowLeft;
@@ -150,20 +151,21 @@ void main() {
 	float volumeChange = (totalInflow - totalOutflow) * PREPROC_DT;
 
 	float updatedWaterHeight = max(0.0f, initialWaterHeight + volumeChange * PREPROC_INVERSE_CELL_AREA);
-	water_height[index] = updatedWaterHeight;
-
 	float averageWaterHeight = (initialWaterHeight + updatedWaterHeight) * 0.5f;
-	if (averageWaterHeight < 0.001f) {
-		velocity_x[index] = 0.0f;
-		velocity_y[index] = 0.0f;
-		return;
-	}
+	water_height[index] = updatedWaterHeight;
 
 	float waterFlowX = (inflowLeft - outflowLeft + outflowRight - inflowRight) * 0.5f;
 	float waterFlowY = (inflowTop - outflowTop + outflowBottom - inflowBottom) * 0.5f;
 
-	float velocityX = min(waterFlowX / (PREPROC_CELL_SIZE_Y * averageWaterHeight), 0.99f / PREPROC_DT);
-	float velocityY = min(waterFlowY / (PREPROC_CELL_SIZE_X * averageWaterHeight), 0.99f / PREPROC_DT);
+	float velocityX = waterFlowX / (PREPROC_CELL_SIZE_Y * averageWaterHeight);
+	float velocityY = waterFlowY / (PREPROC_CELL_SIZE_X * averageWaterHeight);
+
+	float minDepth = 0.001f;
+	if (averageWaterHeight < minDepth) {
+		float t = averageWaterHeight / minDepth;
+		velocityX *= t;
+		velocityY *= t;
+	}
 
 	velocity_x[index] = velocityX;
 	velocity_y[index] = velocityY;
@@ -184,15 +186,14 @@ float SampleTiltSin(uint x, uint y) {
 	float heightRight = terrain_height[CoordsToIndexClamped(x + 1, y)];
 	float heightTop = terrain_height[CoordsToIndexClamped(x, y - 1)];
 	float heightBottom = terrain_height[CoordsToIndexClamped(x, y + 1)];
-	float dx = (heightRight - heightLeft) / (2.0 * PREPROC_CELL_SIZE_X);
-	float dy = (heightBottom - heightTop) / (2.0 * PREPROC_CELL_SIZE_Y);
 
 	vec3 dhdx = vec3(2 * PREPROC_CELL_SIZE_X, heightRight - heightLeft, 0);
 	vec3 dhdy = vec3(0, heightTop - heightBottom, 2 * PREPROC_CELL_SIZE_Y);
 	vec3 normal = cross(dhdx, dhdy);
-	float sinTiltAngle = abs(normal.y) / length(normal);
 
-	return sinTiltAngle;
+	float tiltCos = abs(normal.y) / length(normal);
+
+	return sqrt(1.0f - tiltCos * tiltCos);
 }
 
 float SampleSpeed(uint cellIndex) {
@@ -208,28 +209,20 @@ void main() {
 	}
 
 	float tiltSin = SampleTiltSin(x, y);
-	float tiltScale = clamp(tiltSin, 0.0f, 0.5f);
 	float speed = SampleSpeed(index);
-	float capacity = PREPROC_SEDIMENT_CAPACITY_CONSTANT * tiltScale * speed;
+	float capacity = PREPROC_SEDIMENT_CAPACITY_CONSTANT * tiltSin * speed * water_height[index];
 	float suspendedSediment = suspended_sediment[index];
 
-	float Dmax = 5.0;
-	float lmax = clamp(1.0 - max(0.0, Dmax - water_height[index]) / Dmax, 0.0, 1.0);
-	capacity *= lmax;
-
 	if (capacity > suspendedSediment) {
-		float dissolvedAmount = min(
-			PREPROC_DT * PREPROC_DISSOLVE_SEDIMENT_CONSTANT * (capacity - suspendedSediment),
-			terrain_height[index] * 0.001
-		);
-		terrain_height_updated[index] = max(0.0f, terrain_height[index] - dissolvedAmount);
+		float dissolvedAmount = PREPROC_DT * PREPROC_DISSOLVE_SEDIMENT_CONSTANT * (capacity - suspendedSediment);
+		dissolvedAmount = min(dissolvedAmount, 0.01f * PREPROC_DT);
+		terrain_height_updated[index] = terrain_height[index] - dissolvedAmount;
 		suspended_sediment[index] += dissolvedAmount;
 	}
 	else {
-		float depositedAmount = min(
-			PREPROC_DT * PREPROC_SEDIMENT_DEPOSITION_CONSTANT * (suspendedSediment - capacity),
-			terrain_height[index] * 0.001
-		);
+		float depositedAmount = PREPROC_DT * PREPROC_SEDIMENT_DEPOSITION_CONSTANT * (suspendedSediment - capacity);
+		depositedAmount = min(depositedAmount, suspendedSediment);
+		//depositedAmount = min(depositedAmount, 0.01f * PREPROC_DT);
 		terrain_height_updated[index] = terrain_height[index] + depositedAmount;
 		suspended_sediment[index] -= depositedAmount;
 	}
@@ -286,8 +279,8 @@ void main() {
 		return;
 	}
 
-	water_height[index] = max(0.0f, water_height[index] - water_height[index] * PREPROC_DT * PREPROC_EVAPORATION_CONSTANT);
 	suspended_sediment[index] = suspended_sediment_updated[index];
+	water_height[index] = max(0.0f, water_height[index] - water_height[index] * PREPROC_DT * PREPROC_EVAPORATION_CONSTANT);
 }
 )";
 
@@ -380,8 +373,7 @@ void ErosionSimulatorGPU::Resize(int32_t resolutionX, int32_t resolutionY, float
 	m_shaderPreprocessor.SetConstant("PREPROC_DISSOLVE_SEDIMENT_CONSTANT",   m_sedimentDissolveConstant,   ShaderPreprocessorType::Float);
 	m_shaderPreprocessor.SetConstant("PREPROC_SEDIMENT_DEPOSITION_CONSTANT", m_sedimentDepositionConstant, ShaderPreprocessorType::Float);
 	m_shaderPreprocessor.SetConstant("PREPROC_EVAPORATION_CONSTANT",		 m_evaporationConstant,		   ShaderPreprocessorType::Float);
-	m_shaderPreprocessor.SetConstant("PREPROC_PREPROC_MIN_TILT_SCALE",		 m_minTiltScale,			   ShaderPreprocessorType::Float);
-	m_shaderPreprocessor.SetConstant("PREPROC_PREPROC_MAX_TILT_SCALE",		 m_maxTiltScale,			   ShaderPreprocessorType::Float);
+	m_shaderPreprocessor.SetConstant("PREPROC_FLUX_DAMPING",				 m_fluxDamping,				   ShaderPreprocessorType::Float);
 
 	m_incrementWaterShader = RenderEngine::CreateComputeShader(
 		m_shaderPreprocessor.PreprocessComputeShader(INCREMENT_WATER_SHADER_SOURCE, m_localWorkGroupSizeX, m_localWorkGroupSizeY)

@@ -9,11 +9,12 @@ union SDL_Event;
 class WindowUI {
 public:
 	WindowUI(MainWindow* window, bool docking);
-	~WindowUI();
+	virtual ~WindowUI();
 
-	void HandleEvent(const SDL_Event& event);
-	void AddElement(UIElement* element);
-	void Draw();
+	virtual void HandleEvent(const SDL_Event& event);
+	virtual void AddElement(UIElement* element);
+
+	virtual void Draw() = 0;
 
 protected:
 	MainWindow* m_window;

@@ -22,7 +22,7 @@ Texture<float> TextureLoader::LoadTextureFloatGreyscale(const std::filesystem::p
 		}
 	}
 	Texture<float> buffer({ width, height });
-	std::copy(data, data + buffer.GetByteSize(), buffer.GetData());
+	memcpy(buffer.GetData(), data, buffer.GetByteSize());
 	stbi_image_free(data);
 	return buffer;
 }
@@ -43,7 +43,7 @@ Texture<glm::vec3> TextureLoader::LoadTextureFloatRGB(const std::filesystem::pat
 		}
 	}
 	Texture<glm::vec3> buffer({ width, height });
-	std::copy(data, data + buffer.GetByteSize(), buffer.GetData());
+	memcpy(buffer.GetData(), data, buffer.GetByteSize());
 	stbi_image_free(data);
 	return buffer;
 }
@@ -64,7 +64,7 @@ Texture<glm::vec4> TextureLoader::LoadTextureFloatRGBA(const std::filesystem::pa
 		}
 	}
 	Texture<glm::vec4> buffer({ width, height });
-	std::copy(data, data + buffer.GetByteSize(), buffer.GetData());
+	memcpy(buffer.GetData(), data, buffer.GetByteSize());
 	stbi_image_free(data);
 	return buffer;
 }

@@ -1,7 +1,7 @@
 #include "MainWindow.h"
 
 #include "WindowUI.h"
-#include "Utils/Log.h"
+#include "Log/Log.h"
 #include "Time/EngineTime.h"
 #include "Time/GlobalTimer.h"
 #include "UserInput/UserInput.h"
@@ -39,12 +39,6 @@ glm::ivec2 MainWindow::GetResolution() const {
 
 bool MainWindow::GetShouldClose() const {
     return m_shouldClose;
-}
-
-void MainWindow::InitUI() {
-    if (!m_ui) {
-        m_ui = new WindowUI(this, true);
-    }
 }
 
 void MainWindow::SetApplication(Application* application) {

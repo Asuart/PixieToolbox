@@ -17,11 +17,11 @@ public:
     glm::ivec2 GetResolution() const;
     bool GetShouldClose() const;
 
-    void InitUI();
     void SetApplication(Application* application);
     void Close();
 
     virtual void Start();
+    virtual void InitUI() = 0;
 
 protected:
     SDL_Window* m_window = nullptr;

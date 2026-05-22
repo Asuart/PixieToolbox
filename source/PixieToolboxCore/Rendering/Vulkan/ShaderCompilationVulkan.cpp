@@ -4,7 +4,7 @@
 #include <glslang/Public/resource_limits_c.h>
 
 #include "Rendering/RenderEngine.h"
-#include "Utils/Log.h"
+#include "Log/Log.h"
 
 struct SpirVBinary {
 	uint32_t* words;

@@ -33,6 +33,14 @@ public:
 		SetPixel(coords.y * m_resolution.x + coords.x, value);
 	}
 
+	void AccumulatePixel(uint64_t index, T value) {
+		m_pixels[index] += value;
+	}
+
+	void AccumulatePixel(glm::ivec2 coords, T value) {
+		AccumulatePixel(coords.y * m_resolution.x + coords.x, value);
+	}
+
 	glm::ivec2 GetResolution() const {
 		return m_resolution;
 	}

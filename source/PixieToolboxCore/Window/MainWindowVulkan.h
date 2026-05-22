@@ -8,6 +8,8 @@ public:
 	MainWindowVulkan(const std::string& name, glm::ivec2 resolution) : MainWindow(name, resolution) {}
 	//~MainWindowVulkan();
 
+	void InitUI() {}
+
 	VkInstance GetInstance() { return m_vkInstance; }
 	VkDevice GetDevice() { return m_vkDevice; }
 	VkPhysicalDevice GetPhysicalDevice() { return m_vkPhysicalDevice; }

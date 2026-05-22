@@ -6,6 +6,8 @@ public:
 	MainWindowOpenGL(const std::string& name, glm::ivec2 resolution);
 	~MainWindowOpenGL();
 
+	void InitUI();
+
 	SDL_GLContext GetOpenGLContext() const;
 
 protected:

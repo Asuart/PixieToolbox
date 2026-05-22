@@ -1,7 +1,7 @@
 #include "RenderEngine.h"
 #include "Rendering/OpenGL/RendererOpenGL.h"
 #include "Rendering/Vulkan/RendererVulkan.h"
-#include "Utils/Log.h"
+#include "Log/Log.h"
 
 bool RenderEngine::Initialize(MainWindow* window, RenderAPI api) {
 	s_renderAPI = api;

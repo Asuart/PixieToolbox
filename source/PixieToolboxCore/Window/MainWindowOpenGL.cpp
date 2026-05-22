@@ -1,6 +1,7 @@
 #include "MainWindowOpenGL.h"
-#include "Utils/Log.h"
+#include "Log/Log.h"
 #include "Rendering/RenderEngine.h"
+#include "WindowUIOpenGL.h"
 
 MainWindowOpenGL::MainWindowOpenGL(const std::string& name, glm::ivec2 resolution) :
 	MainWindow(name, resolution) {
@@ -31,6 +32,12 @@ MainWindowOpenGL::~MainWindowOpenGL() {
     SDL_GL_DeleteContext(m_glContext);
     SDL_DestroyWindow(m_window);
     SDL_Quit();
+}
+
+void MainWindowOpenGL::InitUI() {
+    if (!m_ui) {
+        m_ui = new WindowUIOpenGL(this, true);
+    }
 }
 
 SDL_GLContext MainWindowOpenGL::GetOpenGLContext() const {

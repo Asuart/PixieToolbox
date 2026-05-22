@@ -1,7 +1,7 @@
 #include "RendererOpenGL.h"
 
 #include "OpenGLCallbacks.h"
-#include "Utils/Log.h"
+#include "Log/Log.h"
 
 RendererOpenGL::RendererOpenGL() {
 	if (!gladLoadGL()) {

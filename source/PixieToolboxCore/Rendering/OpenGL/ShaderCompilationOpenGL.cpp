@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "Utils/Log.h"
+#include "Log/Log.h"
 
 ShaderOpenGL CompileShaderOpenGL(const char* vertexShaderSource, const char* framgentShaderSource, const char* geometryShaderSource) {
 	GLuint vertShader = glCreateShader(GL_VERTEX_SHADER);

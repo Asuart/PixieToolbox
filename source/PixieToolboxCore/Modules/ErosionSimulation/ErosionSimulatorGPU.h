@@ -50,15 +50,14 @@ public:
 	int64_t m_iteration;
 
 	// constants
-	float m_dt = 0.01f;
+	float m_dt = 0.005f;
 	float m_gravity = 9.8f;
-	float m_sedimentCapacityConstant = 1.0f;
-	float m_sedimentDissolveConstant = 0.05f;
-	float m_sedimentDepositionConstant = 0.05f;
-	float m_minTiltScale = 0.01f;
-	float m_maxTiltScale = 0.5f;
-	float m_evaporationConstant = 1.3f;
-	float m_waterIncrement = 10.5f;
+	float m_sedimentCapacityConstant = 0.5f;
+	float m_sedimentDissolveConstant = 0.01f;
+	float m_sedimentDepositionConstant = 0.01f;
+	float m_evaporationConstant = 1.5f;
+	float m_waterIncrement = 0.25f;
+	float m_fluxDamping = 0.99f;
 
 	// precomputed values
 	int64_t m_cellsCount;

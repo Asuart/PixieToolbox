@@ -1,6 +1,6 @@
 #include "Timer.h"
 
-#include "Utils/Log.h"
+#include "Log/Log.h"
 
 Timer::Timer(const std::string& name) : m_name(name) {
 	m_start = std::chrono::high_resolution_clock::now();

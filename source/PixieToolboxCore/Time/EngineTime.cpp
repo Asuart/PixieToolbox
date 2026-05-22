@@ -1,6 +1,6 @@
 #include "EngineTime.h"
 
-#include "Utils/Log.h"
+#include "Log/Log.h"
 
 void Time::Update() {
 	std::chrono::milliseconds newTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
