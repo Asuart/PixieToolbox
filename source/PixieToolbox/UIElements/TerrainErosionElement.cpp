@@ -10,6 +10,10 @@
 #include <Texture/TextureLoader.h>
 #include <Texture/TextureUtils.h>
 #include <Texture/TextureGenerator.h>
+#include <Config.h>
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
 
 TerrainErosionElement::TerrainErosionElement() :
 	m_camera(glm::vec3(-128, 128, -128), glm::vec3(128, 0, 128), glm::vec3(0, 1, 0), glm::radians(39.6f), 16.0f / 9.0f, 1.0f, 5000.0f),
@@ -17,14 +21,15 @@ TerrainErosionElement::TerrainErosionElement() :
 
 	GlobalTimer::StartTimer("Sim Initialization");
 
-	Texture<float> heightMap = TextureLoader::LoadTextureFloatGreyscale("example-height-map.png");
+	Texture<uint8_t> heightMapUInt8 = TextureLoader::LoadTextureUInt8Greyscale("example-height-map.png");
 
-	int32_t desiredWidth = 1024;
-	float mapAspect = Aspect(heightMap.GetResolution());
+	int32_t desiredWidth = 1000;
+	float mapAspect = Aspect(heightMapUInt8.GetResolution());
 	int32_t desiredHeight = static_cast<int32_t>(desiredWidth / mapAspect);
+	Texture<float> heightMap = TextureUtils::NormalizeTexture(heightMapUInt8, 0.0f, 1.0f);
 	heightMap = TextureUtils::ResizeTexture(heightMap, { desiredWidth, desiredHeight });
-	heightMap = TextureUtils::GaussianBlurFilter(heightMap, 16, 16.0f);
-	heightMap = TextureUtils::MultiplyTexture(heightMap, 10.0f);
+	heightMap = TextureUtils::GaussianBlurFilter(heightMap, 64, 32.0f);
+	heightMap = TextureUtils::NormalizeTexture(heightMap, 0.0f, 24.0f);
 
 	Texture<float> noiseTexture = TextureUtils::SumTextures<float>({
 		TextureGenerator::GeneratePerlinNoise({ desiredWidth, desiredHeight }, 0, { 8, 8 }, 1.0f),
@@ -34,11 +39,13 @@ TerrainErosionElement::TerrainErosionElement() :
 		TextureGenerator::GeneratePerlinNoise({ desiredWidth, desiredHeight }, 4, { 128, 128 }, 0.0625f)
 		});
 	noiseTexture = TextureUtils::NormalizeTexture(noiseTexture);
-	noiseTexture = TextureUtils::MultiplyTexture(noiseTexture, 5.0f);
+	noiseTexture = TextureUtils::MultiplyTexture(noiseTexture, 3.0f);
 
 	heightMap = TextureUtils::SumTextures<float>({ heightMap , noiseTexture });
 
-	m_sim.SetInitialHeightMap(heightMap.GetData(), desiredWidth, desiredHeight, 100.0f, 100.0f / mapAspect);
+	const float realSize = 5475.0f;
+	const float scale = 0.1826484018f;
+	m_sim.SetInitialHeightMap(heightMap.GetData(), desiredWidth, desiredHeight, scale * realSize, scale * realSize / mapAspect);
 
 	m_frameBuffer = RenderEngine::CreateFrameBuffer({ 1280, 720 });
 	m_terrainShader = ShaderLoader::LoadShader(
@@ -50,7 +57,7 @@ TerrainErosionElement::TerrainErosionElement() :
 		"ErosionSimulationWaterFragmentShader.glsl"
 	);
 
-	Mesh* grid = MeshGenerator::Grid({ 256, 256 * (6800.0f / 10000.0f) }, { desiredWidth, desiredHeight });
+	Mesh* grid = MeshGenerator::Grid({ 256.0f, 256.0f / mapAspect }, { desiredWidth, desiredHeight });
 	m_gridMesh = RenderEngine::LoadMesh(grid);
 	delete grid;
 
@@ -81,6 +88,8 @@ void TerrainErosionElement::Draw() {
 		RenderEngine::SetUniformMat4f(m_terrainShader, "mView", m_camera.GetViewMatrix());
 		RenderEngine::SetUniformMat4f(m_terrainShader, "mProjection", m_camera.GetProjectionMatrix());
 		RenderEngine::SetUniform1f(m_terrainShader, "uDeltaTime", m_sim.m_dt);
+		RenderEngine::SetUniform1f(m_terrainShader, "uCellSizeX", m_sim.m_cellSizeX);
+		RenderEngine::SetUniform1f(m_terrainShader, "uCellSizeY", m_sim.m_cellSizeY);
 
 		RenderEngine::DrawMesh(m_gridMesh, m_terrainShader);
 
@@ -93,7 +102,30 @@ void TerrainErosionElement::Draw() {
 
 		RenderEngine::UnbindFrameBuffer();
 
+		ImVec2 p = ImGui::GetCursorScreenPos();
+
 		ImGui::Image((void*)RenderEngine::GetInternalColorAttachmentID(m_frameBuffer), viewportResolution, {0.0, 1.0}, {1.0, 0.0});
+
+		ImGui::SetCursorScreenPos(ImVec2(p.x + 20, p.y + 20));
+		if (ImGui::Button("Save Texture")) {
+			std::vector<uint8_t> bufferData = RenderEngine::GetShaderStorageBufferData(m_sim.m_buffers[static_cast<int32_t>(ErosionSimulatorGPU::BufferBinding::TerrainHeight)], 0, m_sim.m_resolutionX * m_sim.m_resolutionY * sizeof(float));
+			Texture<float> heightMapFloat(reinterpret_cast<float*>(bufferData.data()), { m_sim.m_resolutionX, m_sim.m_resolutionY });
+			
+			float min = INFINITY;
+			float max = -INFINITY;
+			for (int32_t i = 0; i < m_sim.m_resolutionX * m_sim.m_resolutionY; i++) {
+				min = glm::min(min, heightMapFloat.GetPixel(i));
+				max = glm::max(max, heightMapFloat.GetPixel(i));
+			}
+			uint8_t* newData = new uint8_t[m_sim.m_resolutionX * m_sim.m_resolutionY];
+			for (int32_t i = 0; i < m_sim.m_resolutionX * m_sim.m_resolutionY; i++) {
+				newData[i] = static_cast<uint8_t>(255.0f * (heightMapFloat.GetPixel(i) - min) / (max - min));
+			}
+
+			stbi_write_png("D:/test.png", m_sim.m_resolutionX, m_sim.m_resolutionY, 1, newData, 0);
+
+			delete[] newData;
+		}
 	}
 	ImGui::End();
 	ImGui::PopStyleVar();

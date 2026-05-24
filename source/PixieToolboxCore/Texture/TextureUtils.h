@@ -16,7 +16,7 @@ public:
 		}
 
 		float rescaleX = static_cast<float>(newResolution.x) / static_cast<float>(width);
-		float rescaleY = static_cast<float>(newResolution.x) / static_cast<float>(height);
+		float rescaleY = static_cast<float>(newResolution.y) / static_cast<float>(height);
 
 		for (int32_t y = 0, pixel = 0; y < newResolution.y; y++) {
 			for (int32_t x = 0; x < newResolution.x; x++, pixel++) {
@@ -176,6 +176,24 @@ public:
 			for (const Texture<T>& texture : textures) {
 				result.AccumulatePixel(i, texture.GetPixel(i));
 			}
+		}
+
+		return result;
+	}
+
+	static Texture<float> NormalizeTexture(const Texture<uint8_t>& texture, float newMin = 0.0f, float newMax = 1.0f) {
+		float min = std::numeric_limits<float>::infinity();
+		float max = -std::numeric_limits<float>::infinity();
+		for (uint64_t i = 0; i < texture.GetPixelsCount(); i++) {
+			min = glm::min(min, static_cast<float>(texture.GetPixel(i)));
+			max = glm::max(max, static_cast<float>(texture.GetPixel(i)));
+		}
+
+		Texture<float> result(texture.GetResolution());
+		for (uint64_t i = 0; i < texture.GetPixelsCount(); i++) {
+			float normalized = (static_cast<float>(texture.GetPixel(i)) + min) / (max - min);
+			float remapped = normalized * (newMax - newMin) + newMin;
+			result.SetPixel(i, remapped);
 		}
 
 		return result;

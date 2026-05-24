@@ -9,6 +9,15 @@
 #include "Rendering/RenderEngine.h"
 
 static const char* INCREMENT_WATER_SHADER_SOURCE = R"(
+float hash(uint seed) {
+    seed = (seed ^ 61u) ^ (seed >> 16u);
+    seed *= 9u;
+    seed = seed ^ (seed >> 4u);
+    seed *= 0x27d4eb2du;
+    seed = seed ^ (seed >> 15u);
+    return float(seed) * (1.0 / 4294967296.0);
+}
+
 void main() {
 	const uint x = gl_GlobalInvocationID.x;
 	const uint y = gl_GlobalInvocationID.y;
@@ -17,7 +26,7 @@ void main() {
 		return;
 	}
 
-	water_height[index] += PREPROC_WATER_INCREMENT * PREPROC_DT;
+	water_height[index] += (1.0f - 0.15f + 0.3f * hash(index + uint(water_height[index]))) * PREPROC_WATER_INCREMENT * PREPROC_DT;
 }
 )";
 
@@ -160,13 +169,6 @@ void main() {
 	float velocityX = waterFlowX / (PREPROC_CELL_SIZE_Y * averageWaterHeight);
 	float velocityY = waterFlowY / (PREPROC_CELL_SIZE_X * averageWaterHeight);
 
-	float minDepth = 0.001f;
-	if (averageWaterHeight < minDepth) {
-		float t = averageWaterHeight / minDepth;
-		velocityX *= t;
-		velocityY *= t;
-	}
-
 	velocity_x[index] = velocityX;
 	velocity_y[index] = velocityY;
 }
@@ -215,14 +217,11 @@ void main() {
 
 	if (capacity > suspendedSediment) {
 		float dissolvedAmount = PREPROC_DT * PREPROC_DISSOLVE_SEDIMENT_CONSTANT * (capacity - suspendedSediment);
-		dissolvedAmount = min(dissolvedAmount, 0.01f * PREPROC_DT);
 		terrain_height_updated[index] = terrain_height[index] - dissolvedAmount;
 		suspended_sediment[index] += dissolvedAmount;
 	}
 	else {
 		float depositedAmount = PREPROC_DT * PREPROC_SEDIMENT_DEPOSITION_CONSTANT * (suspendedSediment - capacity);
-		depositedAmount = min(depositedAmount, suspendedSediment);
-		//depositedAmount = min(depositedAmount, 0.01f * PREPROC_DT);
 		terrain_height_updated[index] = terrain_height[index] + depositedAmount;
 		suspended_sediment[index] -= depositedAmount;
 	}

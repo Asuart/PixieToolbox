@@ -7,6 +7,7 @@
 #include "Utils/ShaderPreprocessor.h"
 
 class ErosionSimulatorGPU {
+public:
 	enum class BufferBinding : uint32_t {
 		TerrainHeight = 0,
 		TerrainHeightUpdated,
@@ -22,7 +23,6 @@ class ErosionSimulatorGPU {
 		Count
 	};
 
-public:
 	ErosionSimulatorGPU(int32_t resolutionX = 1, int32_t resolutionY = 1, float realSizeX = 1.0f, float realSizeY = 1.0f);
 
 	void Run(int32_t steps);
@@ -50,14 +50,14 @@ public:
 	int64_t m_iteration;
 
 	// constants
-	float m_dt = 0.005f;
+	float m_dt = 0.01f;
 	float m_gravity = 9.8f;
-	float m_sedimentCapacityConstant = 0.5f;
+	float m_sedimentCapacityConstant = 0.15f;
 	float m_sedimentDissolveConstant = 0.01f;
 	float m_sedimentDepositionConstant = 0.01f;
-	float m_evaporationConstant = 1.5f;
-	float m_waterIncrement = 0.25f;
-	float m_fluxDamping = 0.99f;
+	float m_evaporationConstant = 1.2f;
+	float m_waterIncrement = 0.15f;
+	float m_fluxDamping = 0.999f;
 
 	// precomputed values
 	int64_t m_cellsCount;

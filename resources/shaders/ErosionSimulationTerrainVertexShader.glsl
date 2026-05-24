@@ -27,6 +27,8 @@ uniform mat4 mModel;
 uniform mat4 mView;
 uniform mat4 mProjection;
 uniform float uDeltaTime;
+uniform float uCellSizeX;
+uniform float uCellSizeY;
 
 void main() {
 	float terrainHeight = terrain_height[gl_VertexID];
@@ -34,10 +36,10 @@ void main() {
 	fTexCoords = uv;
 	fWorldPos = (mModel * vec4(pos.x, pos.y + terrainHeight, pos.z, 1.0f)).xyz;
     fVertexColor = vec3(0.2f, 0.8f, 0.2f);
-    if ((velocity_x[gl_VertexID] * uDeltaTime) > 1.0f) {
+    if ((velocity_x[gl_VertexID] * uDeltaTime / uCellSizeX) > 1.0f) {
         fVertexColor = vec3(1.0f, 0.0f, 0.0f);
     }
-    if ((velocity_y[gl_VertexID] * uDeltaTime) > 1.0f) {
+    if ((velocity_y[gl_VertexID] * uDeltaTime / uCellSizeY) > 1.0f) {
         fVertexColor = vec3(1.0f, 0.0f, 0.0f);
     }
 
