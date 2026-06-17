@@ -1,0 +1,2 @@
+add_subdirectory(PixieToolboxCore)
+add_subdirectory(PixieToolboxApplication)

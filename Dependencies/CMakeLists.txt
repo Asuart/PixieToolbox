@@ -1,0 +1,3 @@
+add_subdirectory(PixieUIApplication)
+add_subdirectory(ResourceManagement)
+add_subdirectory(glaze)
