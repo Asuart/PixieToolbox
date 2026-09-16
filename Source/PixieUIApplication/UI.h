@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 
-#include <PixieRendering/Renderer/IRenderer.h>
+#include <PixieRenderer/Renderer/IRenderer.h>
 
 #include "UIImage.h"
 

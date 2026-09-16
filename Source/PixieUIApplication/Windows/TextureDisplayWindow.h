@@ -1,8 +1,8 @@
 #pragma once
 #include "PixieUIApplication/UIWindow.h"
 
-#include <PixieRendering/Renderer/IRenderer.h>
-#include <PixieRendering/ResourceManager/ResourceHandles.h>
+#include <PixieRenderer/Renderer/IRenderer.h>
+#include <PixieRenderer/ResourceManager/ResourceHandles.h>
 #include <PixieUIApplication/UIImage.h>
 
 namespace PixieUI {

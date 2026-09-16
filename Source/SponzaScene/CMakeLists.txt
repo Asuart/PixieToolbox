@@ -14,7 +14,7 @@ target_include_directories(SponzaScene PRIVATE "${CMAKE_SOURCE_DIR}/dependencies
 
 target_link_libraries(SponzaScene PRIVATE usd_ms)
 target_link_libraries(SponzaScene PRIVATE EnTT::EnTT)
-target_link_libraries(SponzaScene PRIVATE PixieUIApplication)
+target_link_libraries(SponzaScene PRIVATE PixieRenderer)
 
 if (MSVC)
    target_compile_options(SponzaScene PRIVATE /W4)
@@ -28,9 +28,3 @@ foreach(_source IN ITEMS ${_source_list})
     string(REPLACE "../" "" _group_path "${_group_path}")
     source_group("${_group_path}" FILES "${_source}")
 endforeach()
-
-add_custom_command(TARGET SponzaScene POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_SOURCE_DIR}/resources/models/cube"
-        "$<TARGET_FILE_DIR:SponzaScene>/cube"
-)

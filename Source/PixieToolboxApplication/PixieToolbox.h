@@ -1,6 +1,6 @@
 #pragma once
 #include <PixieUIApplication/PixieUIApplication.h>
-#include <PixieRendering/ResourceHandles.h>
+#include <PixieRenderer/ResourceHandles.h>
 
 namespace PixieToolbox {
 

@@ -2,7 +2,7 @@
 
 #include "../../dependencies/imgui/backends/imgui_impl_vulkan.h"
 
-#include <PixieRendering/Renderer/Vulkan/RendererVulkan.h>
+#include <PixieRenderer/Renderer/Vulkan/RendererVulkan.h>
 
 namespace PixieUI {
 

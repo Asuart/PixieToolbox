@@ -6,7 +6,7 @@
 #include "../../dependencies/imgui/backends/imgui_impl_vulkan.h"
 #include <imgui.h>
 
-#include <PixieRendering/Renderer/Vulkan/RendererVulkan.h>
+#include <PixieRenderer/Renderer/Vulkan/RendererVulkan.h>
 
 #include "PixieUIApplication/UI.h"
 

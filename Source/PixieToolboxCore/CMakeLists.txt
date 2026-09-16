@@ -12,10 +12,6 @@ target_include_directories(PixieToolboxCore PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/
 
 target_include_directories(PixieToolboxCore PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}../../../Dependencies/stb/")
 
-target_link_libraries(PixieToolboxCore PUBLIC PixieApplication)
-target_link_libraries(PixieToolboxCore PUBLIC ResourceManagement)
-target_link_libraries(PixieToolboxCore PUBLIC glaze::glaze)
-
 if (MSVC)
     target_compile_options(PixieToolboxCore PRIVATE /W4 /WX)
 else()

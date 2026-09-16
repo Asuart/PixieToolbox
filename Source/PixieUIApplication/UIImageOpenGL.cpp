@@ -1,6 +1,6 @@
 #include "UIImageOpenGL.h"
 
-#include <PixieRendering/Renderer/OpenGL/RendererOpenGL.h>
+#include <PixieRenderer/Renderer/OpenGL/RendererOpenGL.h>
 
 using namespace PixieRenderer;
 

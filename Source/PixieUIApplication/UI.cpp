@@ -7,7 +7,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include <PixieApplication/Log/Log.h>
-#include <PixieRendering/Window/IWindow.h>
+#include <PixieRenderer/Window/IWindow.h>
 
 #include "UIWindow.h"
 

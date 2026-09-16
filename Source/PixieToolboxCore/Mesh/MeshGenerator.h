@@ -1,5 +1,5 @@
 #pragma once
-#include <PixieRendering/Resources/Mesh.h>
+#include <PixieRenderer/Resources/Mesh.h>
 
 class MeshGenerator {
 public:

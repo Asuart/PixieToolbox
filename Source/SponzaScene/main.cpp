@@ -15,16 +15,16 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include <PixieRendering/Camera/Camera.h>
-#include <PixieRendering/Material/PBRMaterial.h>
-#include <PixieRendering/PixieRendering.h>
-#include <PixieRendering/RenderGraph/IRenderStage.h>
-#include <PixieRendering/RenderGraph/RenderGraph.h>
-#include <PixieRendering/RenderGraph/RenderGraphBuilder.h>
-#include <PixieRendering/RenderGraph/RenderGraphContext.h>
-#include <PixieRendering/Renderer/IRenderer.h>
-#include <PixieRendering/Renderer/Vulkan/RendererVulkan.h>
-#include <PixieRendering/Window/WindowVulkan.h>
+#include <PixieRenderer/Camera/Camera.h>
+#include <PixieRenderer/Material/PBRMaterial.h>
+#include <PixieRenderer/PixieRenderer.h>
+#include <PixieRenderer/RenderGraph/IRenderStage.h>
+#include <PixieRenderer/RenderGraph/RenderGraph.h>
+#include <PixieRenderer/RenderGraph/RenderGraphBuilder.h>
+#include <PixieRenderer/RenderGraph/RenderGraphContext.h>
+#include <PixieRenderer/Renderer/IRenderer.h>
+#include <PixieRenderer/Renderer/Vulkan/RendererVulkan.h>
+#include <PixieRenderer/Window/WindowVulkan.h>
 
 #include <PixieApplication/Time/ApplicationTime.h>
 #include <PixieApplication/UserInput/UserInput.h>
@@ -60,7 +60,6 @@
 #include <PixieUIApplication/Windows/TextureDisplayWindow.h>
 
 using namespace PixieRenderer;
-using namespace PixieApp;
 
 static constexpr int kMaxTextureSize = 2048;
 static constexpr glm::uvec2 kRenderSize = { 1280, 720 };
@@ -873,7 +872,7 @@ int main() {
 
 	// ---- USD scene (unchanged) ----
 	const std::string scenePath =
-	    "/home/asuart/Repos/PixieRendering/assets/main_sponza/NewSponza_Main_USD_Yup_003.usda";
+	    "/home/asuart/Repos/PixieRenderer/assets/main_sponza/NewSponza_Main_USD_Yup_003.usda";
 	gAssetRoot = std::filesystem::path(scenePath).parent_path();
 
 	SceneData scene;

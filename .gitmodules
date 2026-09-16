@@ -4,13 +4,13 @@
 [submodule "Dependencies/stb"]
 	path = Dependencies/stb
 	url = https://github.com/nothings/stb.git
-[submodule "dependencies/imgui"]
-	path = dependencies/imgui
+[submodule "Dependencies/imgui"]
+	path = Dependencies/imgui
 	url = https://github.com/ocornut/imgui.git
 	branch = docking
-[submodule "dependencies/entt"]
-	path = dependencies/entt
+[submodule "Dependencies/entt"]
+	path = Dependencies/entt
 	url = https://github.com/skypjack/entt.git
-[submodule "dependencies/OpenUSD"]
-	path = dependencies/OpenUSD
+[submodule "Dependencies/OpenUSD"]
+	path = Dependencies/OpenUSD
 	url = https://github.com/PixarAnimationStudios/OpenUSD.git

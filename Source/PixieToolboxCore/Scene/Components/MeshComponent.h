@@ -1,5 +1,5 @@
 #pragma once
-#include <PixieRendering/ResourceHandles.h>
+#include <PixieRenderer/ResourceHandles.h>
 
 #include "PixieToolboxCore/Scene/Component.h"
 

@@ -1,5 +1,5 @@
 #pragma once
-#include <PixieRendering/Renderer/IRenderer.h>
+#include <PixieRenderer/Renderer/IRenderer.h>
 
 namespace PixieUI {
 
