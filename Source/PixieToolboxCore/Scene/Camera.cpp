@@ -1,13 +1,15 @@
 #include "Camera.h"
 
-Camera::Camera(glm::vec3 lookFrom, glm::vec3 lookAt, glm::vec3 up, float fovy, float aspect, float near, float far) :
-	m_fovy(fovy), m_aspect(aspect), m_near(near), m_far(far) {
+namespace PixieToolbox {
+
+Camera::Camera(glm::vec3 lookFrom, glm::vec3 lookAt, glm::vec3 up, float fovy, float aspect, float near, float far)
+    : m_fovy(fovy), m_aspect(aspect), m_near(near), m_far(far) {
 	LookAt(lookFrom, lookAt, up);
 	UpdateProjection();
 }
 
-Camera::Camera(Transform transform, float fovy, float aspect, float near, float far) :
-	m_transform(transform), m_fovy(fovy), m_aspect(aspect), m_near(near), m_far(far) {
+Camera::Camera(Transform transform, float fovy, float aspect, float near, float far)
+    : m_transform(transform), m_fovy(fovy), m_aspect(aspect), m_near(near), m_far(far) {
 	UpdateProjection();
 }
 
@@ -86,3 +88,5 @@ bool Camera::operator!=(const Camera& other) {
 bool Camera::operator==(const Camera& other) {
 	return m_mProjection == other.m_mProjection && m_transform == other.m_transform && m_aspect == other.m_aspect;
 }
+
+} // namespace PixieToolbox

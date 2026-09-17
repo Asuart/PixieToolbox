@@ -4,7 +4,7 @@
 
 #include "TimeMeasurement.h"
 
-namespace PixieApp {
+namespace PixieToolbox {
 
 class GlobalTimer {
   public:
@@ -20,4 +20,4 @@ class GlobalTimer {
 	static TimeMeasurement& Timer(const std::string& name);
 };
 
-} // namespace PixieApp
+} // namespace PixieToolbox

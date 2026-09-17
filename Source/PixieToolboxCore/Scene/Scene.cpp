@@ -1,154 +1,169 @@
 #include "Scene.h"
-#include "SceneObject.h"
 
-#include <memory>
-#include <string>
-#include <string_view>
-#include <memory>
+#include <algorithm>
 
-#include <glaze/glaze.hpp>
+#include "Components.h"
+#include "PixieToolboxCOre/Scripts/Script.h"
 
-Scene::Scene(const std::string& name) {
-	_data.name = name;
-	_data.m_rootObject = std::make_shared<SceneObject>("root");
+namespace PixieToolbox {
+
+Scene::Scene(const std::string& name) : m_name(name) {
+	m_root = CreateEntity("root");
 }
 
-Scene::~Scene() {
+Scene::Entity Scene::CreateEntity(const std::string& name) {
+	Entity e = m_registry.create();
+	m_registry.emplace<NameComponent>(e, NameComponent{ name });
+	m_registry.emplace<HierarchyComponent>(e);
+	m_registry.emplace<TransformComponent>(e);
+	return e;
 }
 
-const std::string& Scene::GetName() const {
-	return _data.name;
+Scene::Entity Scene::CreateEntity(const std::string& name, Entity parent) {
+	Entity e = CreateEntity(name);
+	SetParent(e, parent);
+	return e;
 }
 
-void Scene::SetName(const std::string& name) {
-	_data.name = name;
+void Scene::DestroyEntity(Entity entity) {
+	if (entity == Null || entity == m_root)
+		return;
+	if (!m_registry.valid(entity))
+		return;
+
+	SetParent(entity, Null);
+
+	if (auto* h = m_registry.try_get<HierarchyComponent>(entity)) {
+		std::vector<Entity> children = h->children;
+		for (Entity c : children) {
+			DestroyEntity(c);
+		}
+	}
+
+	m_registry.destroy(entity);
 }
 
-std::shared_ptr<SceneObject> Scene::FindObject(const std::string& objectName) const {
-	return _data.m_rootObject->FindObject(objectName);
+void Scene::Clear() {
+	m_registry.clear();
+	m_root = CreateEntity("root");
 }
 
-std::vector<std::shared_ptr<SceneObject>> Scene::FindObjects(const std::string& objectName) const {
-	return _data.m_rootObject->FindObjects(objectName);
+void Scene::SetParent(Entity child, Entity parent) {
+	if (child == Null || !m_registry.valid(child))
+		return;
+	if (child == parent)
+		return;
+
+	auto* h = m_registry.try_get<HierarchyComponent>(child);
+	if (!h) {
+		h = &m_registry.emplace<HierarchyComponent>(child);
+	}
+	if (h->parent != Null) {
+		if (auto* ph = m_registry.try_get<HierarchyComponent>(h->parent)) {
+			auto& sib = ph->children;
+			sib.erase(std::remove(sib.begin(), sib.end(), child), sib.end());
+		}
+	}
+	h->parent = parent;
+
+	if (parent != Null) {
+		auto* ph = m_registry.try_get<HierarchyComponent>(parent);
+		if (!ph) {
+			ph = &m_registry.emplace<HierarchyComponent>(parent);
+		}
+		ph->children.push_back(child);
+	}
 }
 
-std::shared_ptr<SceneObject> Scene::GetRootObject() const {
-	return _data.m_rootObject;
+Scene::Entity Scene::GetParent(Entity entity) const {
+	if (auto* h = m_registry.try_get<HierarchyComponent>(entity)) {
+		return h->parent;
+	}
+	return Null;
+}
+
+const std::vector<Scene::Entity>& Scene::GetChildren(Entity entity) const {
+	static const std::vector<Entity> empty;
+	if (auto* h = m_registry.try_get<HierarchyComponent>(entity)) {
+		return h->children;
+	}
+	return empty;
+}
+
+Scene::Entity Scene::FindEntity(const std::string& name) const {
+	auto view = m_registry.view<NameComponent>();
+	for (auto e : view) {
+		if (view.get<NameComponent>(e).name == name)
+			return e;
+	}
+	return Null;
+}
+
+std::vector<Scene::Entity> Scene::FindEntities(const std::string& name) const {
+	std::vector<Entity> out;
+	auto view = m_registry.view<NameComponent>();
+	for (auto e : view) {
+		if (view.get<NameComponent>(e).name == name)
+			out.push_back(e);
+	}
+	return out;
 }
 
 void Scene::Start() {
-	_data.m_rootObject->OnStart();
+	if (m_root == Null)
+		return;
+	StartEntity(m_root);
 }
 
 void Scene::Update() {
-	_data.m_rootObject->OnUpdate();
+	if (m_root == Null)
+		return;
+	UpdateEntity(m_root);
 }
 
 void Scene::FixedUpdate() {
-	_data.m_rootObject->OnFixedUpdate();
+	if (m_root == Null)
+		return;
+	FixedUpdateEntity(m_root);
 }
 
-void Scene::AddObject(std::shared_ptr<SceneObject> object, std::shared_ptr<SceneObject> parent) {
-	if (object == _data.m_rootObject) return;
-	if (!parent) {
-		parent = _data.m_rootObject;
+void Scene::StartEntity(Entity e) {
+	if (auto* sc = m_registry.try_get<ScriptComponent>(e)) {
+		for (auto& s : sc->scripts) {
+			if (s)
+				s->OnStart(*this, e);
+		}
 	}
-	object->SetParent(parent);
-}
-
-std::shared_ptr<SceneObject> Scene::CreateObject(const std::string& name, std::shared_ptr<SceneObject> parent) {
-	if (!parent) parent = _data.m_rootObject;
-	std::shared_ptr<SceneObject> object = std::make_shared<SceneObject>(name);
-    object->SetParent(parent);
-	return object;
-}
-
-void Scene::RemoveObject(const std::string& objectName) {
-	std::shared_ptr<SceneObject> object = FindObject(objectName);
-	RemoveObject(object);
-}
-
-void Scene::RemoveObjects(const std::string& objectName) {
-	std::vector<std::shared_ptr<SceneObject>> objects = FindObjects(objectName);
-	RemoveObjects(objects);
-}
-
-void Scene::RemoveObject(const std::shared_ptr<SceneObject> object) {
-	if (object == _data.m_rootObject) return;
-	object->SetParent(nullptr);
-}
-
-void Scene::RemoveObjects(const std::vector<std::shared_ptr<SceneObject>>& objects) {
-	for (size_t i = 0; i < objects.size(); i++) {
-		RemoveObject(objects[i]);
+	if (auto* h = m_registry.try_get<HierarchyComponent>(e)) {
+		for (Entity c : h->children)
+			StartEntity(c);
 	}
 }
 
-// template <typename... Args>
-// struct glz::meta<std::function<Args...>> {
-//     static constexpr auto value = glz::skip{}; 
-// };
-
-// template <> struct glz::meta<SceneObject> {
-//     using T = SceneObject;
-//     static constexpr auto value = glz::object(
-//         "name", &T::m_name,
-//         // "components", &T::m_components,
-//         "children", &T::m_children
-//     );
-// };
-
-// namespace glz {
-// 	template<>
-// 	struct meta<SceneObject::Data> {
-// 		using T = SceneObject::Data;
-// 		static constexpr auto modify = object(
-// 			"parent", [](auto& self) { 
-//                 ResourceManager* mngr = ResourceManager::getInstance();
-//                 ::std::shared_ptr<SceneObject> sharedResult = nullptr;
-//                 if (self.parent == nullptr) return sharedResult;
-//                 SceneObject* result = mngr->getResource<SceneObject>(self.parent->getName());
-//                 if (result == nullptr) {
-//                     result = mngr->loadResource<SceneObject>(self.parent->getPath());
-//                 }
-//                 sharedResult.reset(result);
-//                 return sharedResult;
-//             }
-// 		);
-// 	};
-// }
-
-// namespace glz {
-//     template<>
-//     struct meta<SceneObject> {
-//        static constexpr auto modify = glz::object(
-//             "m_parent", [](auto& self) { return glz::skip{}; }
-//         );
-//     };
-// }
-
-// namespace glz {
-//     template<>
-//     struct meta<SceneObject> {
-//        static constexpr auto modify = glz::object(
-//             "m_parent", glz::hide{&SceneObject::m_parent}
-//         );
-//     };
-// }
-
-std::vector<std::byte> Scene::serialize() {
-	std::vector<std::byte> buffer;
-	auto err = glz::write_json(_data, buffer);
-	if (err) {
-		std::cout << "Error: " << glz::format_error(err, buffer) << '\n';
-		return {};
+void Scene::UpdateEntity(Entity e) {
+	if (auto* sc = m_registry.try_get<ScriptComponent>(e)) {
+		for (auto& s : sc->scripts) {
+			if (s)
+				s->OnUpdate(*this, e);
+		}
 	}
-
-    std::cout << std::string_view((char*)buffer.data(), buffer.size()) << "\n";
-
-	return buffer;
+	if (auto* h = m_registry.try_get<HierarchyComponent>(e)) {
+		for (Entity c : h->children)
+			UpdateEntity(c);
+	}
 }
 
-Scene* Scene::deserialize(const std::vector<std::byte>&) {
-	return new Scene();
+void Scene::FixedUpdateEntity(Entity e) {
+	if (auto* sc = m_registry.try_get<ScriptComponent>(e)) {
+		for (auto& s : sc->scripts) {
+			if (s)
+				s->OnFixedUpdate(*this, e);
+		}
+	}
+	if (auto* h = m_registry.try_get<HierarchyComponent>(e)) {
+		for (Entity c : h->children)
+			FixedUpdateEntity(c);
+	}
 }
+
+} // namespace PixieToolbox

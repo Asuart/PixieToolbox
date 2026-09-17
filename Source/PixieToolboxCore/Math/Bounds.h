@@ -1,6 +1,8 @@
 #pragma once
 #include "MathBase.h"
 
+namespace PixieToolbox {
+
 struct Bounds2i {
 	glm::ivec2 min = glm::ivec2(std::numeric_limits<int32_t>::max());
 	glm::ivec2 max = glm::ivec2(std::numeric_limits<int32_t>::lowest());
@@ -60,7 +62,6 @@ struct Bounds3i {
 	float Area() const;
 	float Volume() const;
 	int32_t MaxDimension() const;
-	glm::ivec3 Offset(glm::ivec3 p) const;
 	void BoundingSphere(glm::vec3* center, float* radius) const;
 	bool IsEmpty() const;
 	bool IsDegenerate() const;
@@ -102,3 +103,5 @@ Bounds3i Union(const Bounds3i& b1, const Bounds3i& b2);
 Bounds3f Union(const Bounds3f& b1, const Bounds3f& b2);
 Bounds3f Union(const Bounds3f& b, glm::vec3 p);
 bool Inside(glm::vec3 p, const Bounds3f& b);
+
+} // namespace PixieToolbox

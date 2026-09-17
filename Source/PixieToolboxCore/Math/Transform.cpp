@@ -1,5 +1,7 @@
 #include "Transform.h"
 
+namespace PixieToolbox {
+
 struct Decomposition {
 	glm::vec3 scale;
 	glm::quat orientation;
@@ -22,12 +24,10 @@ Transform::Transform(const glm::vec3& position, const glm::quat& rotation, const
 	Set(position, rotation, scale);
 };
 
-Transform::Transform(const glm::mat4& m) :
-	m_transform(m), m_inverseTransform(glm::inverse(m)) {
+Transform::Transform(const glm::mat4& m) : m_transform(m), m_inverseTransform(glm::inverse(m)) {
 }
 
-Transform::Transform(const glm::mat4& m, const glm::mat4& mInv) :
-	m_transform(m), m_inverseTransform(mInv) {
+Transform::Transform(const glm::mat4& m, const glm::mat4& mInv) : m_transform(m), m_inverseTransform(mInv) {
 }
 
 const glm::mat4& Transform::GetMatrix() const {
@@ -132,7 +132,7 @@ void Transform::Rotate(const glm::quat& rotation) {
 
 void Transform::Rotate(float x, float y, float z) {
 	Decomposition dec = Decompose(m_transform);
-	dec.orientation *= glm::quat({ x, y ,z });
+	dec.orientation *= glm::quat({ x, y, z });
 	m_transform = Recompose(dec);
 	m_inverseTransform = glm::inverse(m_transform);
 }
@@ -178,8 +178,7 @@ glm::vec3 Transform::ApplyPoint(glm::vec3 p) const {
 	glm::vec4 transformed = m_transform * glm::vec4(p, 1.0);
 	if (transformed.w == 1.0f) {
 		return transformed;
-	}
-	else {
+	} else {
 		return transformed / transformed.w;
 	}
 }
@@ -204,8 +203,7 @@ glm::vec3 Transform::ApplyInversePoint(glm::vec3 p) const {
 	glm::vec4 transformed = m_inverseTransform * glm::vec4(p, 1.0);
 	if (transformed.w == 1.0f) {
 		return transformed;
-	}
-	else {
+	} else {
 		return transformed / transformed.w;
 	}
 }
@@ -257,11 +255,9 @@ Transform RotateFromTo(glm::vec3 from, glm::vec3 to) {
 	glm::vec3 refl;
 	if (std::abs(from.x) < 0.72f && std::abs(to.x) < 0.72f) {
 		refl = glm::vec3(1, 0, 0);
-	}
-	else if (std::abs(from.y) < 0.72f && std::abs(to.y) < 0.72f) {
+	} else if (std::abs(from.y) < 0.72f && std::abs(to.y) < 0.72f) {
 		refl = glm::vec3(0, 1, 0);
-	}
-	else {
+	} else {
 		refl = glm::vec3(0, 0, 1);
 	}
 
@@ -269,9 +265,8 @@ Transform RotateFromTo(glm::vec3 from, glm::vec3 to) {
 	glm::mat4 r;
 	for (int32_t i = 0; i < 3; ++i) {
 		for (int32_t j = 0; j < 3; ++j) {
-			r[i][j] = ((i == j) ? 1 : 0) - 2 / glm::dot(u, u) * u[i] * u[j] -
-				2 / glm::dot(v, v) * v[i] * v[j] +
-				4 * glm::dot(u, v) / (glm::dot(u, u) * glm::dot(v, v)) * v[i] * u[j];
+			r[i][j] = ((i == j) ? 1 : 0) - 2 / glm::dot(u, u) * u[i] * u[j] - 2 / glm::dot(v, v) * v[i] * v[j] +
+			          4 * glm::dot(u, v) / (glm::dot(u, u) * glm::dot(v, v)) * v[i] * u[j];
 		}
 	}
 
@@ -310,3 +305,5 @@ Transform LookAt(glm::vec3 from, glm::vec3 to, glm::vec3 up) {
 	t.LookAt(from, to, up);
 	return t;
 }
+
+} // namespace PixieToolbox

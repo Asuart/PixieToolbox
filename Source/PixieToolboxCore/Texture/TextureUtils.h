@@ -1,218 +1,286 @@
 #pragma once
+
+#include <algorithm>
+#include <cassert>
+#include <cmath>
+#include <cstdint>
+#include <limits>
+#include <stdexcept>
+#include <type_traits>
+#include <vector>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
+
 #include "Texture.h"
 
+namespace PixieToolbox {
+
+template <typename T> struct PixelAccumulator {
+	using type = T;
+	static type From(const T& v) {
+		return v;
+	}
+	static T To(const type& v) {
+		return v;
+	}
+};
+
+template <> struct PixelAccumulator<uint8_t> {
+	using type = float;
+	static type From(uint8_t v) {
+		return static_cast<float>(v);
+	}
+	static uint8_t To(const type& v) {
+		return static_cast<uint8_t>(std::clamp(v, 0.0f, 255.0f));
+	}
+};
+
+template <> struct PixelAccumulator<uint16_t> {
+	using type = float;
+	static type From(uint16_t v) {
+		return static_cast<float>(v);
+	}
+	static uint16_t To(const type& v) {
+		return static_cast<uint16_t>(std::clamp(v, 0.0f, 65535.0f));
+	}
+};
+
 class TextureUtils {
-public:
-	template<typename T>
-	static Texture<T> ResizeTexture(const Texture<T>& texture, glm::ivec2 newResolution) {
-		std::vector<T> resizedData(newResolution.x * newResolution.y);
+  public:
+	template <typename T> static Texture<T> ResizeTexture(const Texture<T>& texture, glm::uvec2 newResolution) {
+		using Acc = typename PixelAccumulator<T>::type;
 
-		int32_t width = texture.GetWidth();
-		int32_t height = texture.GetHeight();
+		const uint32_t width = texture.GetWidth();
+		const uint32_t height = texture.GetHeight();
 
-		if (newResolution.x < width || newResolution.y < height) {
-			throw;
+		if (newResolution.x == width && newResolution.y == height) {
+			return texture;
+		}
+		if (width == 0 || height == 0) {
+			return Texture<T>(newResolution);
 		}
 
-		float rescaleX = static_cast<float>(newResolution.x) / static_cast<float>(width);
-		float rescaleY = static_cast<float>(newResolution.y) / static_cast<float>(height);
+		Texture<T> result(newResolution);
 
-		for (int32_t y = 0, pixel = 0; y < newResolution.y; y++) {
-			for (int32_t x = 0; x < newResolution.x; x++, pixel++) {
-				int32_t x0 = glm::min(static_cast<int32_t>(x / rescaleX), width - 1);
-				int32_t y0 = glm::min(static_cast<int32_t>(y / rescaleY), height - 1);
-				int32_t x1 = (x0 + 1) >= width ? x0 : (x0 + 1);
-				int32_t y1 = (y0 + 1) >= height ? y0 : (y0 + 1);
+		const float rescaleX = static_cast<float>(newResolution.x) / static_cast<float>(width);
+		const float rescaleY = static_cast<float>(newResolution.y) / static_cast<float>(height);
 
-				float u = (x / rescaleX) - static_cast<int32_t>(x / rescaleX);
-				float v = (y / rescaleY) - static_cast<int32_t>(y / rescaleY);
+		for (uint32_t y = 0; y < newResolution.y; ++y) {
+			const float srcY = (static_cast<float>(y) + 0.5f) / rescaleY - 0.5f;
+			const int32_t y0 = std::clamp(static_cast<int32_t>(std::floor(srcY)), 0, static_cast<int32_t>(height) - 1);
+			const int32_t y1 = std::min(y0 + 1, static_cast<int32_t>(height) - 1);
+			const float v = std::clamp(srcY - static_cast<float>(y0), 0.0f, 1.0f);
 
-				assert(u >= 0.0f && u <= 1.0f);
-				assert(v >= 0.0f && v <= 1.0f);
+			for (uint32_t x = 0; x < newResolution.x; ++x) {
+				const float srcX = (static_cast<float>(x) + 0.5f) / rescaleX - 0.5f;
+				const int32_t
+				    x0 = std::clamp(static_cast<int32_t>(std::floor(srcX)), 0, static_cast<int32_t>(width) - 1);
+				const int32_t x1 = std::min(x0 + 1, static_cast<int32_t>(width) - 1);
+				const float u = std::clamp(srcX - static_cast<float>(x0), 0.0f, 1.0f);
 
-				T v00 = std::log10(texture.GetPixel(y0 * width + x0));
-				T v10 = std::log10(texture.GetPixel(y0 * width + x1));
-				T v01 = std::log10(texture.GetPixel(y1 * width + x0));
-				T v11 = std::log10(texture.GetPixel(y1 * width + x1));
+				const Acc v00 = PixelAccumulator<T>::From(texture.GetPixel(static_cast<uint64_t>(y0) * width + x0));
+				const Acc v10 = PixelAccumulator<T>::From(texture.GetPixel(static_cast<uint64_t>(y0) * width + x1));
+				const Acc v01 = PixelAccumulator<T>::From(texture.GetPixel(static_cast<uint64_t>(y1) * width + x0));
+				const Acc v11 = PixelAccumulator<T>::From(texture.GetPixel(static_cast<uint64_t>(y1) * width + x1));
 
-				T bilinearlyInterpolated =
-					v00 * (1.0f - u) * (1.0f - v) +
-					v10 * u * (1.0f - v) +
-					v01 * (1.0f - u) * v +
-					v11 * u * v;
+				const Acc top = v00 * (1.0f - u) + v10 * u;
+				const Acc bottom = v01 * (1.0f - u) + v11 * u;
+				const Acc value = top * (1.0f - v) + bottom * v;
 
-				resizedData[pixel] = bilinearlyInterpolated;
+				result.SetPixel(glm::uvec2(x, y), PixelAccumulator<T>::To(value));
 			}
 		}
 
-		return Texture<T>(resizedData, newResolution);
+		return result;
 	}
 
-	template<typename T>
-	static Texture<T> SquareBlurFilter(const Texture<T>& texture, glm::ivec2 size) {
-		std::vector<T> blurred(texture.GetPixelsCount());
-		for (int32_t y = 0, pixel = 0; y < texture.GetHeight(); y++) {
-			for (int32_t x = 0; x < texture.GetWidth(); x++, pixel++) {
-				float sum = 0.0f;
+	template <typename T> static Texture<T> SquareBlurFilter(const Texture<T>& texture, glm::uvec2 range) {
+		using Acc = typename PixelAccumulator<T>::type;
+
+		const uint32_t width = texture.GetWidth();
+		const uint32_t height = texture.GetHeight();
+		if (width == 0 || height == 0)
+			return texture;
+
+		const int32_t rx = static_cast<int32_t>(range.x);
+		const int32_t ry = static_cast<int32_t>(range.y);
+
+		std::vector<Acc> tmp(static_cast<size_t>(width) * height);
+		for (uint32_t y = 0; y < height; ++y) {
+			for (uint32_t x = 0; x < width; ++x) {
+				Acc sum{};
 				float weight = 0.0f;
-				for (int32_t r = -size.x; r <= size.x; r++) {
-					if (x + r >= 0 && x + r < texture.GetWidth()) {
-						sum += texture.GetPixel(pixel + r);
-						weight += 1.0f;
-					}
+				const int32_t x0 = std::max(0, static_cast<int32_t>(x) - rx);
+				const int32_t x1 = std::min(static_cast<int32_t>(width) - 1, static_cast<int32_t>(x) + rx);
+				for (int32_t xi = x0; xi <= x1; ++xi) {
+					sum += PixelAccumulator<T>::From(texture.GetPixel(static_cast<uint64_t>(y) * width + xi));
+					weight += 1.0f;
 				}
-				blurred[pixel] = sum / weight;
+				tmp[static_cast<size_t>(y) * width + x] = sum / weight;
 			}
 		}
 
-		Texture<T> blurredTexture(texture.GetResolution());
-		for (int32_t y = 0, pixel = 0; y < texture.GetHeight(); y++) {
-			for (int32_t x = 0; x < texture.GetWidth(); x++, pixel++) {
-				float sum = 0.0f;
+		Texture<T> blurred(texture.GetResolution());
+		for (uint32_t y = 0; y < height; ++y) {
+			for (uint32_t x = 0; x < width; ++x) {
+				Acc sum{};
 				float weight = 0.0f;
-				for (int32_t r = -size.y; r <= size.y; r++) {
-					if (y + r >= 0 && y + r < texture.GetHeight()) {
-						sum += blurred[pixel + r * texture.GetWidth()];
-						weight += 1.0f;
-					}
+				const int32_t y0 = std::max(0, static_cast<int32_t>(y) - ry);
+				const int32_t y1 = std::min(static_cast<int32_t>(height) - 1, static_cast<int32_t>(y) + ry);
+				for (int32_t yi = y0; yi <= y1; ++yi) {
+					sum += tmp[static_cast<size_t>(yi) * width + x];
+					weight += 1.0f;
 				}
-				blurredTexture.SetPixel(pixel, sum / weight);
+				blurred.SetPixel(glm::uvec2(x, y), PixelAccumulator<T>::To(sum / weight));
 			}
 		}
 
-		return blurredTexture;
+		return blurred;
 	}
 
-	template<typename T>
+	template <typename T>
 	static Texture<T> SquareBlurFilter(const Texture<T>& texture, int32_t rangeX, int32_t rangeY) {
-		return SquareBlurFilter(texture, { rangeX, rangeY });
+		return SquareBlurFilter(texture, glm::uvec2(rangeX, rangeY));
 	}
 
-	template<typename T>
-	static Texture<T> SquareBlurFilter(const Texture<T>& texture, int32_t range) {
-		return SquareBlurFilter(texture, { range, range });
+	template <typename T> static Texture<T> SquareBlurFilter(const Texture<T>& texture, int32_t range) {
+		return SquareBlurFilter(texture, glm::uvec2(range, range));
 	}
 
-	template<typename T>
-	static Texture<T> GaussianBlurFilter(const Texture<T>& texture, glm::ivec2 range, float scale) {
-		const float c1 = 1.0f / (glm::sqrt(TwoPi) * scale);
-		const float c2 = -1.0f / (2.0f * scale * scale);
+	template <typename T>
+	static Texture<T> GaussianBlurFilter(const Texture<T>& texture, glm::uvec2 range, float sigma) {
+		using Acc = typename PixelAccumulator<T>::type;
 
-		std::vector<T> blurred(texture.GetPixelsCount());
-		for (int32_t y = 0, pixel = 0; y < texture.GetHeight(); y++) {
-			for (int32_t x = 0; x < texture.GetWidth(); x++, pixel++) {
-				float sum = 0.0f;
+		const uint32_t width = texture.GetWidth();
+		const uint32_t height = texture.GetHeight();
+		if (width == 0 || height == 0)
+			return texture;
+		if (sigma <= 0.0f)
+			return texture;
+
+		const float c1 = 1.0f / (std::sqrt(glm::two_pi<float>()) * sigma);
+		const float c2 = -1.0f / (2.0f * sigma * sigma);
+
+		const int32_t rx = static_cast<int32_t>(range.x);
+		const int32_t ry = static_cast<int32_t>(range.y);
+
+		std::vector<Acc> tmp(static_cast<size_t>(width) * height);
+		for (uint32_t y = 0; y < height; ++y) {
+			for (uint32_t x = 0; x < width; ++x) {
+				Acc sum{};
 				float weight = 0.0f;
-				for (int32_t r = -range.x; r <= range.x; r++) {
-					if (x + r >= 0 && x + r < texture.GetWidth()) {
-						float pixelWeight = c1 * glm::exp(c2 * r * r);
-						sum += texture.GetPixel(pixel + r) * pixelWeight;
-						weight += pixelWeight;
-					}
+				const int32_t x0 = std::max(0, static_cast<int32_t>(x) - rx);
+				const int32_t x1 = std::min(static_cast<int32_t>(width) - 1, static_cast<int32_t>(x) + rx);
+				for (int32_t xi = x0; xi <= x1; ++xi) {
+					const float dx = static_cast<float>(xi - static_cast<int32_t>(x));
+					const float w = c1 * std::exp(c2 * dx * dx);
+					sum += PixelAccumulator<T>::From(texture.GetPixel(static_cast<uint64_t>(y) * width + xi)) * w;
+					weight += w;
 				}
-				blurred[pixel] = sum / weight;
+				tmp[static_cast<size_t>(y) * width + x] = sum / weight;
 			}
 		}
 
-		Texture<T> blurredTexture(texture.GetResolution());
-		for (int32_t y = 0, pixel = 0; y < texture.GetHeight(); y++) {
-			for (int32_t x = 0; x < texture.GetWidth(); x++, pixel++) {
-				float sum = 0.0f;
+		Texture<T> blurred(texture.GetResolution());
+		for (uint32_t y = 0; y < height; ++y) {
+			for (uint32_t x = 0; x < width; ++x) {
+				Acc sum{};
 				float weight = 0.0f;
-				for (int32_t r = -range.y; r <= range.y; r++) {
-					if (y + r >= 0 && y + r < texture.GetHeight()) {
-						float pixelWeight = c1 * glm::exp(c2 * r * r);
-						sum += blurred[pixel + r * texture.GetWidth()] * pixelWeight;
-						weight += pixelWeight;
-					}
+				const int32_t y0 = std::max(0, static_cast<int32_t>(y) - ry);
+				const int32_t y1 = std::min(static_cast<int32_t>(height) - 1, static_cast<int32_t>(y) + ry);
+				for (int32_t yi = y0; yi <= y1; ++yi) {
+					const float dy = static_cast<float>(yi - static_cast<int32_t>(y));
+					const float w = c1 * std::exp(c2 * dy * dy);
+					sum += tmp[static_cast<size_t>(yi) * width + x] * w;
+					weight += w;
 				}
-				blurredTexture.SetPixel(pixel, sum / weight);
+				blurred.SetPixel(glm::uvec2(x, y), PixelAccumulator<T>::To(sum / weight));
 			}
 		}
 
-		return blurredTexture;
+		return blurred;
 	}
 
-	template<typename T>
-	static Texture<T> GaussianlurFilter(const Texture<T>& texture, int32_t rangeX, int32_t rangeY, float scale) {
-		return GaussianBlurFilter(texture, { rangeX, rangeY }, scale);
+	template <typename T>
+	static Texture<T> GaussianBlurFilter(const Texture<T>& texture, int32_t rangeX, int32_t rangeY, float sigma) {
+		return GaussianBlurFilter(texture, glm::uvec2(rangeX, rangeY), sigma);
 	}
 
-	template<typename T>
-	static Texture<T> GaussianBlurFilter(const Texture<T>& texture, int32_t range, float scale) {
-		return GaussianBlurFilter(texture, { range, range }, scale);
+	template <typename T> static Texture<T> GaussianBlurFilter(const Texture<T>& texture, int32_t range, float sigma) {
+		return GaussianBlurFilter(texture, glm::uvec2(range, range), sigma);
 	}
 
-	template<typename T>
-	static Texture<T> MultiplyTexture(const Texture<T>& texture, float scale) {
-		Texture<T> scaled = texture;
-		for (int32_t pixelIndex = 0; pixelIndex < scaled.GetPixelsCount(); pixelIndex++) {
-			scaled.SetPixel(pixelIndex, (scaled.GetPixel(pixelIndex) + 5.0f) * scale);
+	template <typename T> static Texture<T> MultiplyTexture(const Texture<T>& texture, float scale) {
+		Texture<T> result(texture.GetResolution());
+		const uint64_t pixels = texture.GetPixelsCount();
+		for (uint64_t i = 0; i < pixels; ++i) {
+			const auto v = PixelAccumulator<T>::From(texture.GetPixel(i)) * scale;
+			result.SetPixel(i, PixelAccumulator<T>::To(v));
 		}
-		return scaled;
+		return result;
 	}
 
-	template<typename T>
-	static Texture<T> SumTextures(std::vector<Texture<T>> textures) {
-		if (textures.size() == 0) {
+	template <typename T> static Texture<T> SumTextures(const std::vector<Texture<T>>& textures) {
+		using Acc = typename PixelAccumulator<T>::type;
+
+		if (textures.empty()) {
 			return Texture<T>();
 		}
-		else if (textures.size() == 1) {
-			return textures[0];
+		if (textures.size() == 1) {
+			return textures.front();
 		}
 
-		for (int32_t i = 1; i < textures.size(); i++) {
-			if (textures[i].GetWidth() != textures[0].GetWidth()) {
-				throw;
-			}
-			if (textures[i].GetHeight() != textures[0].GetHeight()) {
-				throw;
+		const glm::uvec2 res = textures.front().GetResolution();
+		for (size_t i = 1; i < textures.size(); ++i) {
+			if (textures[i].GetResolution() != res) {
+				throw std::invalid_argument("SumTextures: texture size mismatch");
 			}
 		}
 
-		Texture<T> result(textures[0].GetResolution());
-		for (uint64_t i = 0; i < textures[0].GetPixelsCount(); i++) {
-			for (const Texture<T>& texture : textures) {
-				result.AccumulatePixel(i, texture.GetPixel(i));
+		Texture<T> result(res);
+		const uint64_t pixels = textures.front().GetPixelsCount();
+		for (uint64_t i = 0; i < pixels; ++i) {
+			Acc sum{};
+			for (const auto& tex : textures) {
+				sum += PixelAccumulator<T>::From(tex.GetPixel(i));
 			}
+			result.SetPixel(i, PixelAccumulator<T>::To(sum));
 		}
-
 		return result;
 	}
 
-	static Texture<float> NormalizeTexture(const Texture<uint8_t>& texture, float newMin = 0.0f, float newMax = 1.0f) {
-		float min = std::numeric_limits<float>::infinity();
-		float max = -std::numeric_limits<float>::infinity();
-		for (uint64_t i = 0; i < texture.GetPixelsCount(); i++) {
-			min = glm::min(min, static_cast<float>(texture.GetPixel(i)));
-			max = glm::max(max, static_cast<float>(texture.GetPixel(i)));
+	template <typename T>
+	static std::enable_if_t<std::is_arithmetic_v<T>, Texture<float>> NormalizeTexture(
+	    const Texture<T>& texture,
+	    float newMin = 0.0f,
+	    float newMax = 1.0f
+	) {
+		const uint64_t pixels = texture.GetPixelsCount();
+		if (pixels == 0) {
+			return Texture<float>(texture.GetResolution());
 		}
+
+		float minV = std::numeric_limits<float>::infinity();
+		float maxV = -std::numeric_limits<float>::infinity();
+		for (uint64_t i = 0; i < pixels; ++i) {
+			const float v = static_cast<float>(texture.GetPixel(i));
+			minV = std::min(minV, v);
+			maxV = std::max(maxV, v);
+		}
+
+		const float range = maxV - minV;
+		const float invRange = (range > 0.0f) ? (1.0f / range) : 0.0f;
 
 		Texture<float> result(texture.GetResolution());
-		for (uint64_t i = 0; i < texture.GetPixelsCount(); i++) {
-			float normalized = (static_cast<float>(texture.GetPixel(i)) + min) / (max - min);
-			float remapped = normalized * (newMax - newMin) + newMin;
-			result.SetPixel(i, remapped);
+		for (uint64_t i = 0; i < pixels; ++i) {
+			const float v = static_cast<float>(texture.GetPixel(i));
+			const float n = (v - minV) * invRange;
+			const float r = n * (newMax - newMin) + newMin;
+			result.SetPixel(i, r);
 		}
-
-		return result;
-	}
-
-	static Texture<float> NormalizeTexture(const Texture<float>& texture, float newMin = 0.0f, float newMax = 1.0f) {
-		float min = std::numeric_limits<float>::infinity();
-		float max = -std::numeric_limits<float>::infinity();
-		for (uint64_t i = 0; i < texture.GetPixelsCount(); i++) {
-			min = glm::min(min, texture.GetPixel(i));
-			max = glm::max(max, texture.GetPixel(i));
-		}
-
-		Texture<float> result = texture;
-		for (uint64_t i = 0; i < texture.GetPixelsCount(); i++) {
-			float normalized = (texture.GetPixel(i) + min) / (max - min);
-			float remapped = normalized * (newMax - newMin) + newMin;
-			result.SetPixel(i, remapped);
-		}
-
 		return result;
 	}
 };
+
+} // namespace PixieToolbox

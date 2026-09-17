@@ -1,7 +1,7 @@
 #pragma once
 #include <filesystem>
 
-namespace PixieApp {
+namespace PixieToolbox {
 
 class Config {
   public:
@@ -12,7 +12,7 @@ class Config {
 	static std::filesystem::path ExpandPathToResources(const std::filesystem::path& path);
 
   protected:
-	static std::filesystem::path m_applicationPath;
+	static std::filesystem::path s_applicationPath;
 };
 
-} // namespace PixieApp
+} // namespace PixieToolbox

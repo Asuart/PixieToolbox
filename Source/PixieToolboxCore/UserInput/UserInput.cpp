@@ -2,12 +2,13 @@
 
 #include <GLFW/glfw3.h>
 
-namespace PixieApp {
+namespace PixieToolbox {
 
 void UserInput::Initialize(GLFWwindow* window) {
 	s_window = window;
-	if (!window)
+	if (!window) {
 		return;
+	}
 
 	glfwSetKeyCallback(window, KeyCallback);
 	glfwSetMouseButtonCallback(window, MouseButtonCallback);
@@ -111,8 +112,9 @@ bool UserInput::IsCursorCaptured() {
 }
 
 void UserInput::KeyCallback(GLFWwindow*, int key, int /*scancode*/, int action, int /*mods*/) {
-	if (key < 0 || static_cast<size_t>(key) >= s_keyDown.size())
+	if (key < 0 || static_cast<size_t>(key) >= s_keyDown.size()) {
 		return;
+	}
 	switch (action) {
 	case GLFW_PRESS:
 		s_keyDown[key] = 1;
@@ -130,8 +132,9 @@ void UserInput::KeyCallback(GLFWwindow*, int key, int /*scancode*/, int action, 
 }
 
 void UserInput::MouseButtonCallback(GLFWwindow*, int button, int action, int /*mods*/) {
-	if (button < 0 || static_cast<size_t>(button) >= s_mouseDown.size())
+	if (button < 0 || static_cast<size_t>(button) >= s_mouseDown.size()) {
 		return;
+	}
 	if (action == GLFW_PRESS) {
 		s_mouseDown[button] = 1;
 		s_mousePressed[button] = 1;
@@ -164,4 +167,4 @@ void UserInput::WindowFocusCallback(GLFWwindow*, int focused) {
 	}
 }
 
-} // namespace PixieApp
+} // namespace PixieToolbox

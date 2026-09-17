@@ -1,7 +1,7 @@
 #pragma once
 #include "TimeMeasurement.h"
 
-namespace PixieApp {
+namespace PixieToolbox {
 
 class Timer {
   public:
@@ -10,7 +10,7 @@ class Timer {
 
   private:
 	std::string m_name;
-    TimeMeasurement::Clock::time_point m_start;
+	TimeMeasurement::Clock::time_point m_start;
 };
 
-} // namespace PixieApp
+} // namespace PixieToolbox

@@ -1,6 +1,6 @@
 #include "GlobalTimer.h"
 
-namespace PixieApp {
+namespace PixieToolbox {
 
 void GlobalTimer::StartTimer(const std::string& name) {
 	Timer(name).start = TimeMeasurement::Clock::now();
@@ -30,4 +30,4 @@ TimeMeasurement& GlobalTimer::Timer(const std::string& name) {
 	return it->second;
 }
 
-} // namespace PixieApp
+} // namespace PixieToolbox

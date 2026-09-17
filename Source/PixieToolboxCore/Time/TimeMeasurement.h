@@ -4,7 +4,7 @@
 #include <chrono>
 #include <string>
 
-namespace PixieApp {
+namespace PixieToolbox {
 
 class TimeMeasurement {
   public:
@@ -30,4 +30,4 @@ class TimeMeasurement {
 	size_t m_count = 0;
 };
 
-} // namespace PixieApp
+} // namespace PixieToolbox

@@ -2,15 +2,17 @@
 #include <array>
 #include <glm/glm.hpp>
 
+namespace PixieToolbox {
+
 class PerlinNoise {
-public:
+  public:
 	PerlinNoise(uint32_t seed = 0);
 
-    void SetSeed(uint32_t seed);
+	void SetSeed(uint32_t seed);
 
 	float Sample(glm::vec2 coords) const;
 
-private:
+  private:
 	static const std::array<glm::vec2, 4> s_constantVectors;
 	std::array<uint8_t, 256> m_permutations = { 0 };
 
@@ -18,3 +20,5 @@ private:
 	float Lerp(float t, float from, float to) const;
 	float SplineWeight(float t) const;
 };
+
+} // namespace PixieToolbox

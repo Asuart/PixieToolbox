@@ -2,9 +2,19 @@
 #include "PixieToolboxCore/Math/MathBase.h"
 #include "PixieToolboxCore/Math/Transform.h"
 
+namespace PixieToolbox {
+
 class Camera {
-public:
-	Camera(glm::vec3 lookFrom, glm::vec3 lookAt, glm::vec3 up, float fovy, float aspect, float _near = 0.01f, float _far = 1000.0);
+  public:
+	Camera(
+	    glm::vec3 lookFrom,
+	    glm::vec3 lookAt,
+	    glm::vec3 up,
+	    float fovy,
+	    float aspect,
+	    float _near = 0.01f,
+	    float _far = 1000.0
+	);
 	Camera(Transform transform, float fovy, float aspect, float _near = 0.01f, float _far = 1000.0);
 
 	void LookAt(const glm::vec3& lookFrom, const glm::vec3& lookAt, const glm::vec3& up);
@@ -27,7 +37,7 @@ public:
 	bool operator!=(const Camera& other);
 	bool operator==(const Camera& other);
 
-protected:
+  protected:
 	Transform m_transform;
 	glm::mat4 m_mProjection = glm::mat4(1.0);
 	float m_fovy = Pi / 2.0f;
@@ -37,3 +47,5 @@ protected:
 
 	void UpdateProjection();
 };
+
+} // namespace PixieToolbox

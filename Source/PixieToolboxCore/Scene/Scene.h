@@ -1,62 +1,108 @@
 #pragma once
-
-#include <vector>
 #include <memory>
+#include <string>
+#include <vector>
 
-#include <ResourceManager.hpp>
-#include <Resource.hpp>
+#include <entt/entt.hpp>
 
-#include "SceneObject.h"
+namespace PixieToolbox {
 
 class Scene {
-	GENERATE_RESOURCEABLE(Scene,
-        std::shared_ptr<SceneObject> m_rootObject;
-    )
-public:
+  public:
+	using Entity = entt::entity;
+	static constexpr Entity Null = entt::null;
+
 	Scene() = default;
 	Scene(const std::string& name);
-	~Scene();
+	~Scene() = default;
+
+	const std::string& GetName() const {
+		return m_name;
+	}
+	void SetName(const std::string& name) {
+		m_name = name;
+	}
+
+	entt::registry& Registry() {
+		return m_registry;
+	}
+	const entt::registry& Registry() const {
+		return m_registry;
+	}
+
+	Entity CreateEntity(const std::string& name = "Entity");
+	Entity CreateEntity(const std::string& name, Entity parent);
+	void DestroyEntity(Entity entity);
+	void Clear();
+
+	Entity GetRoot() const {
+		return m_root;
+	}
+	void SetParent(Entity child, Entity parent);
+	Entity GetParent(Entity entity) const;
+	const std::vector<Entity>& GetChildren(Entity entity) const;
+
+	template <typename T, typename... Args> T& AddComponent(Entity entity, Args&&... args) {
+		return m_registry.emplace<T>(entity, std::forward<Args>(args)...);
+	}
+
+	template <typename T> T& GetComponent(Entity entity) {
+		return m_registry.get<T>(entity);
+	}
+
+	template <typename T> const T& GetComponent(Entity entity) const {
+		return m_registry.get<T>(entity);
+	}
+
+	template <typename T> T* TryGetComponent(Entity entity) {
+		return m_registry.try_get<T>(entity);
+	}
+
+	template <typename T> bool HasComponent(Entity entity) const {
+		return m_registry.all_of<T>(entity);
+	}
+
+	template <typename T> void RemoveComponent(Entity entity) {
+		m_registry.remove<T>(entity);
+	}
+
+	template <typename T> auto View() {
+		return m_registry.view<T>();
+	}
+
+	template <typename... T> auto View() {
+		return m_registry.view<T...>();
+	}
+
+	Entity FindEntity(const std::string& name) const;
+	std::vector<Entity> FindEntities(const std::string& name) const;
+
+	template <typename T> Entity FindEntityWithComponent() const {
+		auto view = m_registry.view<T>();
+		auto it = view.begin();
+		return it == view.end() ? Null : *it;
+	}
+
+	template <typename T> std::vector<Entity> FindEntitiesWithComponent() const {
+		std::vector<Entity> out;
+		auto view = m_registry.view<T>();
+		for (auto e : view)
+			out.push_back(e);
+		return out;
+	}
 
 	void Start();
 	void Update();
 	void FixedUpdate();
 
-	const std::string& GetName() const;
-	void SetName(const std::string& name);
-	std::shared_ptr<SceneObject> GetRootObject() const;
+  private:
+	void StartEntity(Entity entity);
+	void UpdateEntity(Entity entity);
+	void FixedUpdateEntity(Entity entity);
 
-	void AddObject(std::shared_ptr<SceneObject> object, std::shared_ptr<SceneObject> parent = nullptr);
-	std::shared_ptr<SceneObject> CreateObject(const std::string& name, std::shared_ptr<SceneObject> parent = nullptr);
-	void RemoveObject(const std::string& objectName);
-	void RemoveObjects(const std::string& objectName);
-	void RemoveObject(const std::shared_ptr<SceneObject> object);
-	void RemoveObjects(const std::vector<std::shared_ptr<SceneObject>>& objects);
-	std::shared_ptr<SceneObject> FindObject(const std::string& objectName) const;
-	std::vector<std::shared_ptr<SceneObject>> FindObjects(const std::string& objectName) const;
-
-	std::vector<std::byte> serialize();
-	static Scene* deserialize(const std::vector<std::byte>&);
-
-protected:
-	std::vector<std::shared_ptr<SceneObject>> m_flatObjects;
-	std::vector<std::shared_ptr<Component>> m_flatComponents;
-
-public:
-    template<typename T, typename ...Args>
-    void CreateComponent(std::shared_ptr<SceneObject> object, Args... args) {
-        std::shared_ptr<T> component = std::make_shared<T>(object, args...);
-        object->m_components.push_back(component);
-    }
-    
-	template<typename T>
-	std::shared_ptr<SceneObject> FindObjectWithComponent() {
-		return _data.m_rootObject->FindObjectWithComponent<T>();
-	}
-
-	template<typename T>
-	std::vector<std::shared_ptr<SceneObject>> FindObjectsWithComponent() {
-		std::vector<std::shared_ptr<SceneObject>> objects;
-		_data.m_rootObject->FindObjectsWithComponent<T>(objects);
-		return objects;
-	}
+	std::string m_name;
+	entt::registry m_registry;
+	Entity m_root = Null;
 };
+
+} // namespace PixieToolbox

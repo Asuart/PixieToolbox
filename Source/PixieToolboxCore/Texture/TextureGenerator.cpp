@@ -1,6 +1,13 @@
 #include "TextureGenerator.h"
 
-Texture<float> TextureGenerator::GeneratePerlinNoise(glm::ivec2 resolution, uint32_t seed, glm::vec2 uvScale, float amplitudeScale) {
+namespace PixieToolbox {
+
+Texture<float> TextureGenerator::GeneratePerlinNoise(
+    glm::ivec2 resolution,
+    uint32_t seed,
+    glm::vec2 uvScale,
+    float amplitudeScale
+) {
 	PerlinNoise perlinNoise(seed);
 	Texture<float> noiseTexture(resolution);
 	for (uint64_t y = 0; y < noiseTexture.GetHeight(); y++) {
@@ -12,3 +19,5 @@ Texture<float> TextureGenerator::GeneratePerlinNoise(glm::ivec2 resolution, uint
 	}
 	return noiseTexture;
 }
+
+} // namespace PixieToolbox

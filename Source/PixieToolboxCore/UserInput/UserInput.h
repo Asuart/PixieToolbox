@@ -6,7 +6,7 @@
 
 struct GLFWwindow;
 
-namespace PixieApp {
+namespace PixieToolbox {
 
 class UserInput {
   public:
@@ -58,4 +58,4 @@ class UserInput {
 	static void WindowFocusCallback(GLFWwindow*, int focused);
 };
 
-} // namespace PixieApp
+} // namespace PixieToolbox

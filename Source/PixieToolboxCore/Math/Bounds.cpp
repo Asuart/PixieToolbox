@@ -1,11 +1,13 @@
 #include "Bounds.h"
 
-Bounds2i::Bounds2i(glm::ivec2 p) :
-	min(p), max(p) {
+#include <limits>
+
+namespace PixieToolbox {
+
+Bounds2i::Bounds2i(glm::ivec2 p) : min(p), max(p) {
 }
 
-Bounds2i::Bounds2i(glm::ivec2 p1, glm::ivec2 p2) :
-	min(glm::min(p1, p2)), max(glm::max(p1, p2)) {
+Bounds2i::Bounds2i(glm::ivec2 p1, glm::ivec2 p2) : min(glm::min(p1, p2)), max(glm::max(p1, p2)) {
 }
 
 glm::ivec2 Bounds2i::Diagonal() const {
@@ -55,12 +57,10 @@ bool Bounds2i::operator!=(const Bounds2i& b) const {
 	return min != b.min || max != b.max;
 }
 
-Bounds2f::Bounds2f(glm::vec2 p) :
-	min(p), max(p) {
+Bounds2f::Bounds2f(glm::vec2 p) : min(p), max(p) {
 }
 
-Bounds2f::Bounds2f(glm::vec2 p1, glm::vec2 p2) :
-	min(glm::min(p1, p2)), max(glm::max(p1, p2)) {
+Bounds2f::Bounds2f(glm::vec2 p1, glm::vec2 p2) : min(glm::min(p1, p2)), max(glm::max(p1, p2)) {
 }
 
 glm::vec2 Bounds2f::Diagonal() const {
@@ -79,6 +79,10 @@ float Bounds2f::Area() const {
 int32_t Bounds2f::MaxDimension() const {
 	glm::vec2 diagonal = Diagonal();
 	return diagonal.x >= diagonal.y ? 0 : 1;
+}
+
+glm::vec2 Bounds2f::Offset(glm::vec2 p) const {
+	return p - min;
 }
 
 void Bounds2f::BoundingCircle(glm::vec2* center, float* radius) const {
@@ -110,12 +114,10 @@ bool Bounds2f::operator!=(const Bounds2f& b) const {
 	return min != b.min || max != b.max;
 }
 
-Bounds3i::Bounds3i(glm::ivec3 p) :
-	min(p), max(p) {
+Bounds3i::Bounds3i(glm::ivec3 p) : min(p), max(p) {
 }
 
-Bounds3i::Bounds3i(glm::ivec3 p1, glm::ivec3 p2) :
-	min(glm::min(p1, p2)), max(glm::max(p1, p2)) {
+Bounds3i::Bounds3i(glm::ivec3 p1, glm::ivec3 p2) : min(glm::min(p1, p2)), max(glm::max(p1, p2)) {
 }
 
 glm::ivec3 Bounds3i::Corner(int32_t corner) const {
@@ -143,20 +145,6 @@ float Bounds3i::Volume() const {
 int32_t Bounds3i::MaxDimension() const {
 	glm::ivec3 d = Diagonal();
 	return (d.x > d.y && d.x > d.z) ? 0 : (d.y > d.z ? 1 : 2);
-}
-
-glm::ivec3 Bounds3i::Offset(glm::ivec3 p) const {
-	glm::ivec3 o = p - min;
-	if (max.x > min.x) {
-		o.x /= max.x - min.x;
-	}
-	if (max.y > min.y) {
-		o.y /= max.y - min.y;
-	}
-	if (max.z > min.z) {
-		o.z /= max.z - min.z;
-	}
-	return o;
 }
 
 void Bounds3i::BoundingSphere(glm::vec3* center, float* radius) const {
@@ -188,12 +176,10 @@ glm::ivec3& Bounds3i::operator[](int32_t i) {
 	return (i == 0) ? min : max;
 }
 
-Bounds3f::Bounds3f(glm::vec3 p) :
-	min(p), max(p) {
+Bounds3f::Bounds3f(glm::vec3 p) : min(p), max(p) {
 }
 
-Bounds3f::Bounds3f(glm::vec3 p1, glm::vec3 p2) :
-	min(glm::min(p1, p2)), max(glm::max(p1, p2)) {
+Bounds3f::Bounds3f(glm::vec3 p1, glm::vec3 p2) : min(glm::min(p1, p2)), max(glm::max(p1, p2)) {
 }
 
 glm::vec3 Bounds3f::Corner(int32_t corner) const {
@@ -238,8 +224,8 @@ glm::vec3 Bounds3f::Offset(glm::vec3 p) const {
 }
 
 void Bounds3f::BoundingSphere(glm::vec3* center, float* radius) const {
-	*center = (min + max) / 2.0f;
-	*radius = Inside(*center, *this) ? glm::distance(*center, max) : 0;
+	*center = glm::vec3(min + max) * 0.5f;
+	*radius = glm::length(glm::vec3(Diagonal()) * 0.5f);
 }
 
 bool Bounds3f::IsEmpty() const {
@@ -304,3 +290,5 @@ Bounds3i Union(const Bounds3i& b1, const Bounds3i& b2) {
 bool Inside(glm::vec3 p, const Bounds3f& b) {
 	return (p.x >= b.min.x && p.x <= b.max.x && p.y >= b.min.y && p.y <= b.max.y && p.z >= b.min.z && p.z <= b.max.z);
 }
+
+} // namespace PixieToolbox

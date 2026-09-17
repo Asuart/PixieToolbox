@@ -1,6 +1,6 @@
 #include "ApplicationTime.h"
 
-namespace PixieApp {
+namespace PixieToolbox {
 
 void Time::Update() {
 	auto now = Clock::now();
@@ -9,4 +9,4 @@ void Time::Update() {
 	deltaTime = static_cast<float>(rawDeltaTime);
 }
 
-} // namespace PixieApp
+} // namespace PixieToolbox

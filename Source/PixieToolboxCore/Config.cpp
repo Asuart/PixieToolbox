@@ -1,23 +1,23 @@
 #include "Config.h"
 
-namespace PixieApp {
+namespace PixieToolbox {
 
-std::filesystem::path Config::m_applicationPath = "";
+std::filesystem::path Config::s_applicationPath = "";
 
 void Config::SetApplicationPath(const std::filesystem::path& path) {
-	m_applicationPath = path;
+	s_applicationPath = path;
 }
 
 std::filesystem::path Config::GetApplicationPath() {
-	return m_applicationPath;
+	return s_applicationPath;
 }
 
 std::filesystem::path Config::GetApplicationDirectory() {
-	return m_applicationPath.parent_path();
+	return s_applicationPath.parent_path();
 }
 
 std::filesystem::path Config::ExpandPathToResources(const std::filesystem::path& path) {
 	return GetApplicationDirectory().string() + std::string("/resources/") + path.string();
 }
 
-} // namespace PixieApp
+} // namespace PixieToolbox

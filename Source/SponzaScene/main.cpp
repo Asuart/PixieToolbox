@@ -1,6 +1,6 @@
 #include <algorithm>
 #include <cstring>
-#include <cstdlib>          // ← добавлено: _putenv_s, std::getenv
+#include <cstdlib> 
 #include <filesystem>
 #include <functional>
 #include <iostream>
@@ -35,7 +35,6 @@
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include <stb_image_resize2.h>
 
-// ---- OpenUSD ----
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/vt/array.h>
 #include <pxr/usd/sdf/assetPath.h>

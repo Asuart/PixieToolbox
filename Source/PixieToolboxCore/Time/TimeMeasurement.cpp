@@ -1,6 +1,6 @@
 #include "TimeMeasurement.h"
 
-namespace PixieApp {
+namespace PixieToolbox {
 
 void TimeMeasurement::Push(double seconds) {
 	m_samples[m_head] = seconds;
@@ -56,4 +56,4 @@ double TimeMeasurement::FPS() const {
 	return a > 0.0 ? 1.0 / a : 0.0;
 }
 
-} // namespace PixieApp
+} // namespace PixieToolbox

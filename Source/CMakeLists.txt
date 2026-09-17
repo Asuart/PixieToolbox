@@ -1,3 +1,3 @@
 add_subdirectory(PixieToolboxCore)
-add_subdirectory(PixieToolboxApplication)
+add_subdirectory(PixieToolbox)
 add_subdirectory(SponzaScene)

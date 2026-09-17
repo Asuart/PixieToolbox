@@ -1,7 +1,7 @@
 #pragma once
 #include <chrono>
 
-namespace PixieApp {
+namespace PixieToolbox {
 
 class Time {
   public:
@@ -23,4 +23,4 @@ class Time {
 	static void Update();
 };
 
-} // namespace PixieApp
+} // namespace PixieToolbox

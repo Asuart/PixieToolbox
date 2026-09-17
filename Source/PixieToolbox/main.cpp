@@ -1,4 +1,4 @@
-#define SDL_MAIN_HANDLED
+
 
 // #include <PixieApplication/Config.h>
 // #include <PixieToolboxCore/Scene/Scene.h>
@@ -10,7 +10,7 @@
 // using namespace PixieToolbox;
 
 int main(int argc, char** argv) {
-    // Config::SetApplicationPath(argv[0]);
+     Config::SetApplicationPath(argv[0]);
 
     // PixieToolboxApplication app("Pixie Toolbox", { 1280, 720 }, RenderAPI::OpenGL, true);
     //app.Start();

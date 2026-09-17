@@ -1,7 +1,9 @@
 #include "FileReader.h"
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
+
+namespace PixieToolbox {
 
 std::string FileReader::ReadFileAsString(const std::filesystem::path& filePath) {
 	std::ifstream t(filePath);
@@ -12,3 +14,5 @@ std::string FileReader::ReadFileAsString(const std::filesystem::path& filePath) 
 	std::string file((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
 	return file;
 }
+
+} // namespace PixieToolbox

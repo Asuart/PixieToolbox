@@ -2,10 +2,16 @@
 #include "MathBase.h"
 #include "Bounds.h"
 
+namespace PixieToolbox {
+
 class Transform {
-public:
+  public:
 	Transform() = default;
-	Transform(const glm::vec3& position, const glm::quat& rotation = glm::quat(), const glm::vec3& scale = glm::vec3(1.0f));
+	Transform(
+	    const glm::vec3& position,
+	    const glm::quat& rotation = glm::quat(),
+	    const glm::vec3& scale = glm::vec3(1.0f)
+	);
 	Transform(const glm::mat4& m);
 	Transform(const glm::mat4& m, const glm::mat4& mInv);
 
@@ -21,7 +27,11 @@ public:
 
 	void Set(const Transform& transform);
 	void Set(glm::mat4 transform);
-	void Set(const glm::vec3& position, const glm::quat& rotation = glm::quat(), const glm::vec3& scale = glm::vec3(1.0f));
+	void Set(
+	    const glm::vec3& position,
+	    const glm::quat& rotation = glm::quat(),
+	    const glm::vec3& scale = glm::vec3(1.0f)
+	);
 	void LookAt(glm::vec3 pos, glm::vec3 look, glm::vec3 up);
 	void SetPosition(const glm::vec3& pos);
 	void Translate(const glm::vec3& offset);
@@ -54,7 +64,7 @@ public:
 	bool operator!=(const Transform& t) const;
 	Transform operator*(const Transform& t2) const;
 
-protected:
+  protected:
 	glm::mat4 m_transform = glm::mat4(1.0f);
 	glm::mat4 m_inverseTransform = glm::mat4(1.0f);
 };
@@ -65,3 +75,5 @@ Transform RotateFromTo(glm::vec3 from, glm::vec3 to);
 Transform RotateAroundAxis(float sinTheta, float cosTheta, glm::vec3 axis);
 Transform RotateAroundAxis(float theta, glm::vec3 axis);
 Transform LookAt(glm::vec3 from, glm::vec3 to, glm::vec3 up);
+
+} // namespace PixieToolbox
