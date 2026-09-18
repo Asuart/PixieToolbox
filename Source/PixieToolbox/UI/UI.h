@@ -3,19 +3,17 @@
 
 #include <PixieRenderer/Renderer/IRenderer.h>
 
-#include "UIImage.h"
+#include "Image/UIImage.h"
 
-namespace PixieRenderer {
-class IWindow;
-} // namespace PixieRenderer
+namespace PixieToolbox {
 
-namespace PixieUI {
+using namespace PixieRenderer;
 
 class UIWindow;
 
 class UI {
   public:
-	UI(PixieRenderer::IWindow* window, bool docking);
+	UI(IWindow* window, bool docking);
 	virtual ~UI();
 
 	virtual void AddWindow(UIWindow* window);
@@ -23,16 +21,16 @@ class UI {
 	void OnBeforeDrawFrame();
 	virtual void Draw() = 0;
 	virtual UIImage* CreateUIImage(
-	    PixieRenderer::IRenderer* renderer,
-	    PixieRenderer::FrameBufferHandle handle
+	    IRenderer* renderer,
+	    FrameBufferHandle handle
 	) = 0;
 	virtual UIImage* CreateUIImage(
-	    PixieRenderer::IRenderer* renderer,
-	    PixieRenderer::TextureHandle handle
+	    IRenderer* renderer,
+	    TextureHandle handle
 	) = 0;
 
   protected:
-	PixieRenderer::IWindow* m_window;
+	IWindow* m_window;
 	std::vector<UIWindow*> m_windows;
 	bool m_isDocking;
 
@@ -49,4 +47,4 @@ class UI {
 	}
 };
 
-} // namespace PixieUI
+} // namespace PixieToolbox

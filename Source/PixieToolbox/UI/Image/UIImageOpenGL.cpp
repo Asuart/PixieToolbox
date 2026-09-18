@@ -4,7 +4,7 @@
 
 using namespace PixieRenderer;
 
-namespace PixieUI {
+namespace PixieToolbox {
 
 UIImageOpenGL::UIImageOpenGL(IRenderer* renderer) : m_renderer(renderer) {
 }
@@ -40,4 +40,4 @@ ImTextureID UIImageOpenGL::GetTextureID() const {
 	return m_displayTexture;
 }
 
-} // namespace PixieUI
+} // namespace PixieToolbox

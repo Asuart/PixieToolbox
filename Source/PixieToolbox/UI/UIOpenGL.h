@@ -5,7 +5,7 @@ namespace PixieRenderer {
 class WindowOpenGL;
 }
 
-namespace PixieUI {
+namespace PixieToolbox {
 
 class UIOpenGL : public UI {
   public:
@@ -21,4 +21,4 @@ class UIOpenGL : public UI {
 	    override;
 };
 
-} // namespace PixieUI
+} // namespace PixieToolbox

@@ -13,7 +13,7 @@
 
 using namespace PixieRenderer;
 
-namespace PixieUI {
+namespace PixieToolbox {
 
 UIOpenGL::UIOpenGL(WindowOpenGL* mainWindow, bool docking) : UI(mainWindow, docking) {
 	ImGui::CreateContext();
@@ -96,4 +96,4 @@ UIImage* UIOpenGL::CreateUIImage(IRenderer* renderer, TextureHandle handle) {
 	return image;
 }
 
-} // namespace PixieUI
+} // namespace PixieToolbox

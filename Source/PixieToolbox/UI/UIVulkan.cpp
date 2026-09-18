@@ -16,7 +16,7 @@
 
 using namespace PixieRenderer;
 
-namespace PixieUI {
+namespace PixieToolbox {
 
 UIVulkan::UIVulkan(WindowVulkan* mainWindow, bool docking) : UI(mainWindow, docking) {
 	VkDescriptorPoolSize pool_sizes[] = { { VK_DESCRIPTOR_TYPE_SAMPLER, 5000 },
@@ -167,4 +167,4 @@ UIImage* UIVulkan::CreateUIImage(IRenderer* renderer, TextureHandle handle) {
 	return image;
 }
 
-} // namespace PixieUI
+} // namespace PixieToolbox

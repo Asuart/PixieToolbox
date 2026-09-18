@@ -1,7 +1,7 @@
 #pragma once
 #include <PixieRenderer/Renderer/IRenderer.h>
 
-namespace PixieUI {
+namespace PixieToolbox {
 
 class UI;
 
@@ -20,4 +20,4 @@ class UIWindow {
 	PixieRenderer::IRenderer* m_renderer;
 };
 
-} // namespace PixieUI
+} // namespace PixieToolbox

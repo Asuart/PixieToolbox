@@ -7,7 +7,7 @@ namespace PixieRenderer {
 class WindowVulkan;
 }
 
-namespace PixieUI {
+namespace PixieToolbox {
 
 class UIVulkan : public UI {
   public:
@@ -26,4 +26,4 @@ class UIVulkan : public UI {
 			VkDescriptorPool m_pool = VK_NULL_HANDLE;
 };
 
-} // namespace PixieUI
+} // namespace PixieToolbox

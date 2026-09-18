@@ -4,7 +4,7 @@
 
 using namespace PixieRenderer;
 
-namespace PixieUI {
+namespace PixieToolbox {
 
 DemoWindow::DemoWindow(UI* ui, IRenderer* renderer) : UIWindow(ui, renderer) {
 }
@@ -13,4 +13,4 @@ void DemoWindow::Draw() {
 	ImGui::ShowDemoWindow();
 }
 
-} // namespace PixieUI
+} // namespace PixieToolbox

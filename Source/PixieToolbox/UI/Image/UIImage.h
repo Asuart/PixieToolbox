@@ -3,7 +3,7 @@
 
 #include <PixieRenderer/ResourceManager/ResourceHandles.h>
 
-namespace PixieUI {
+namespace PixieToolbox {
 
 class UIImage {
   public:
@@ -14,4 +14,4 @@ class UIImage {
 	virtual ImTextureID GetTextureID() const = 0;
 };
 
-} // namespace PixieUI
+} // namespace PixieToolbox

@@ -12,7 +12,7 @@
 
 using namespace PixieRenderer;
 
-namespace PixieUI {
+namespace PixieToolbox {
 
 static const char* VERTEX_SHADER_SOURCE = R"(
 #version 450 core
@@ -218,4 +218,4 @@ float TextureDisplayWindow::Aspect(glm::ivec2 resolution) {
 	return static_cast<float>(resolution.x) / static_cast<float>(resolution.y);
 }
 
-} // namespace PixieUI
+} // namespace PixieToolbox

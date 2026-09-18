@@ -11,13 +11,14 @@ set_target_properties(PixieToolboxCore PROPERTIES
 target_include_directories(PixieToolboxCore PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../")
 target_include_directories(PixieToolboxCore PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}../../../Dependencies/stb/")
 
-target_link_libraries(PixieToolboxCore PUBLIC PixieRenderer)
+target_link_libraries(PixieToolboxCore PUBLIC usd_m)
 target_link_libraries(PixieToolboxCore PUBLIC EnTT::EnTT)
+target_link_libraries(PixieToolboxCore PUBLIC PixieRenderer)
 
 if (MSVC)
     target_compile_options(PixieToolboxCore PRIVATE /W4 /WX)
 else()
-    target_compile_options(PixieToolboxCore PRIVATE -Wall -Werror -freflection)
+    target_compile_options(PixieToolboxCore PRIVATE -Wall -Werror)
 endif()
 
 foreach(_source IN ITEMS ${_source_list})

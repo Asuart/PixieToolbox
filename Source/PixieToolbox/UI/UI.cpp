@@ -11,7 +11,7 @@
 
 #include "UIWindow.h"
 
-namespace PixieUI {
+namespace PixieToolbox {
 
 UI::UI(PixieRenderer::IWindow* mainWindow, bool docking)
     : m_window(mainWindow), m_isDocking(docking) {
@@ -24,7 +24,7 @@ UI::~UI() {
 	}
 }
 
-void UI::AddWindow(PixieUI::UIWindow* window) {
+void UI::AddWindow(PixieToolbox::UIWindow* window) {
 	if (!window) {
 		return;
 	}
@@ -32,9 +32,9 @@ void UI::AddWindow(PixieUI::UIWindow* window) {
 }
 
 void UI::OnBeforeDrawFrame() {
-	for (PixieUI::UIWindow* window : m_windows) {
+	for (PixieToolbox::UIWindow* window : m_windows) {
 		window->OnBeforeDraw();
 	}
 }
 
-} // namespace PixieUI
+} // namespace PixieToolbox

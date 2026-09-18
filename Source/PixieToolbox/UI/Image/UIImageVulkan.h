@@ -5,7 +5,7 @@
 
 #include <PixieRenderer/Renderer/IRenderer.h>
 
-namespace PixieUI {
+namespace PixieToolbox {
 
 class UIImageVulkan : public UIImage {
   public:
@@ -23,4 +23,4 @@ class UIImageVulkan : public UIImage {
 	PixieRenderer::FrameBufferHandle m_currentFrameBuffer = {};
 };
 
-} // namespace PixieUI
+} // namespace PixieToolbox

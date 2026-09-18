@@ -3,7 +3,7 @@
 
 #include <PixieRenderer/Renderer/IRenderer.h>
 
-namespace PixieUI {
+namespace PixieToolbox {
 
 class UIImageOpenGL : public UIImage {
   public:
@@ -21,4 +21,4 @@ class UIImageOpenGL : public UIImage {
 	PixieRenderer::FrameBufferHandle m_currentFrameBuffer = {};
 };
 
-} // namespace PixieUI
+} // namespace PixieToolbox

@@ -11,7 +11,7 @@
 using namespace PixieRenderer;
 using namespace PixieApp;
 
-namespace PixieUI {
+namespace PixieToolbox {
 
 ApplicationStatsWindow::ApplicationStatsWindow(UI* ui, IRenderer* renderer)
     : UIWindow(ui, renderer) {
@@ -89,4 +89,4 @@ void ApplicationStatsWindow::Draw() {
 	ImGui::End();
 }
 
-} // namespace PixieUI
+} // namespace PixieToolbox

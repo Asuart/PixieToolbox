@@ -12,11 +12,12 @@ target_include_directories(PixieToolbox PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 
 target_link_libraries(PixieToolbox PUBLIC PixieToolboxCore)
 target_link_libraries(PixieToolbox PUBLIC PixieUIApplication) 
+target_link_libraries(PixieToolbox PUBLIC imgui)
 
 if (MSVC)
     target_compile_options(PixieToolbox PRIVATE /W4 /WX)
 else()
-    target_compile_options(PixieToolbox PRIVATE -Wall -Werror -freflection)
+    target_compile_options(PixieToolbox PRIVATE -Wall -Werror)
 endif()
 
 foreach(_source IN ITEMS ${_source_list})

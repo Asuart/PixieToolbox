@@ -5,7 +5,7 @@
 #include <PixieRenderer/ResourceManager/ResourceHandles.h>
 #include <PixieUIApplication/UIImage.h>
 
-namespace PixieUI {
+namespace PixieToolbox {
 
 class TextureDisplayWindow : public UIWindow {
   public:
@@ -38,4 +38,4 @@ class TextureDisplayWindow : public UIWindow {
 	void UpdatePlaneUBO();
 };
 
-} // namespace PixieUI
+} // namespace PixieToolbox

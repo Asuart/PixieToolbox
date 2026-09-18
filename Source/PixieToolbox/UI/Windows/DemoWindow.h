@@ -1,7 +1,7 @@
 #pragma once
 #include "PixieUIApplication/UIWindow.h"
 
-namespace PixieUI {
+namespace PixieToolbox {
 
 class DemoWindow : public UIWindow {
   public:
@@ -10,4 +10,4 @@ class DemoWindow : public UIWindow {
 	void Draw() override;
 };
 
-} // namespace PixieUI
+} // namespace PixieToolbox

@@ -4,7 +4,7 @@
 
 #include <PixieRenderer/Renderer/Vulkan/RendererVulkan.h>
 
-namespace PixieUI {
+namespace PixieToolbox {
 
 UIImageVulkan::UIImageVulkan(PixieRenderer::IRenderer* renderer) : m_renderer(renderer) {
 }
@@ -58,4 +58,4 @@ ImTextureID UIImageVulkan::GetTextureID() const {
 	return reinterpret_cast<ImTextureID>(m_displayTexture);
 }
 
-} // namespace PixieUI
+} // namespace PixieToolbox
