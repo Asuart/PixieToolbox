@@ -20,12 +20,32 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
       }
+    },
+    {
+      "name": "msvc-base",
+      "displayName": "MSVC Base Configuration",
+      "description": "Base settings for MSVC compiler",
+      "hidden": true,
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64",
+      "binaryDir": "${sourceDir}/build/${presetName}"
+    },
+    {
+      "name": "msvc-debug",
+      "displayName": "MSVC Debug",
+      "description": "Debug build using MSVC",
+      "inherits": "msvc-base"
     }
   ],
   "buildPresets": [
     {
       "name": "gcc-debug",
       "configurePreset": "gcc-debug"
+    },
+    {
+      "name": "msvc-debug",
+      "configurePreset": "msvc-debug",
+      "configuration": "Debug"
     }
   ]
 }

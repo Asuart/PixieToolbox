@@ -24,6 +24,8 @@
 #include <pxr/usd/usdShade/materialBindingAPI.h>
 #include <pxr/usd/usdShade/shader.h>
 
+#include <PixieRenderer/Image/ImageTypes.h>
+
 using namespace PixieRenderer;
 
 static std::string TfToString(const pxr::TfToken& t) {
