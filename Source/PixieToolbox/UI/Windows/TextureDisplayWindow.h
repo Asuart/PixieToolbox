@@ -1,9 +1,10 @@
 #pragma once
-#include "PixieUIApplication/UIWindow.h"
+#include "PixieToolbox/UI/UIWindow.h"
 
 #include <PixieRenderer/Renderer/IRenderer.h>
 #include <PixieRenderer/ResourceManager/ResourceHandles.h>
-#include <PixieUIApplication/UIImage.h>
+
+#include "PixieToolbox/UI/Image/UIImage.h"
 
 namespace PixieToolbox {
 

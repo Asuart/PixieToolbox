@@ -11,6 +11,6 @@
 [submodule "Dependencies/entt"]
 	path = Dependencies/entt
 	url = https://github.com/skypjack/entt.git
-[submodule "Dependencies/OpenUSD"]
-	path = Dependencies/OpenUSD
-	url = https://github.com/PixarAnimationStudios/OpenUSD.git
+[submodule "Dependencies/ufbx"]
+	path = Dependencies/ufbx
+	url = https://github.com/ufbx/ufbx.git

@@ -6,6 +6,7 @@ namespace PixieToolbox {
 
 class Camera {
   public:
+	Camera() = default;
 	Camera(
 	    glm::vec3 lookFrom,
 	    glm::vec3 lookAt,

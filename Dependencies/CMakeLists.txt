@@ -1,4 +1,4 @@
 add_subdirectory(PixieRenderer)
 add_subdirectory(entt)
-add_subdirectory(OpenUSD)
+add_subdirectory(ufbx_static_lib)
 add_subdirectory(imgui_static_lib)

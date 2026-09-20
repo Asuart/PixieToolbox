@@ -39,7 +39,7 @@ std::filesystem::path ResolvePath(const std::filesystem::path& filePath, bool& o
 }
 
 bool ComputeResizedSize(int w, int h, int& nw, int& nh) {
-	if (w <= Config::s_maxTextureResolution && h <= Config::s_maxTextureResolution) {
+	if (w <= (int32_t)Config::s_maxTextureResolution && h <= (int32_t)Config::s_maxTextureResolution) {
 		return false;
 	}
 	const float scale = std::

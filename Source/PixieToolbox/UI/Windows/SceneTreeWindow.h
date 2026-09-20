@@ -1,5 +1,5 @@
 #pragma once
-// #include "PixieToolboxCore/Scene/SceneObject.h"
+#include "PixieToolbox/UI/UIWindow.h"
 
 //class SceneTreeWindow : public InterfaceWindow {
 //public:

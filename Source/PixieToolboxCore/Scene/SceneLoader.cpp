@@ -1,372 +1,275 @@
 #include "SceneLoader.h"
 
 #include <algorithm>
-#include <cstdlib>
 #include <cstring>
-#include <filesystem>
-#include <functional>
 #include <iostream>
-#include <memory>
 #include <unordered_map>
 
 #include <glm/glm.hpp>
 
-#include <pxr/base/gf/matrix4d.h>
-#include <pxr/base/vt/array.h>
-#include <pxr/usd/sdf/assetPath.h>
-#include <pxr/usd/usd/primRange.h>
-#include <pxr/usd/usd/stage.h>
-#include <pxr/usd/usdGeom/mesh.h>
-#include <pxr/usd/usdGeom/primvarsAPI.h>
-#include <pxr/usd/usdGeom/xformable.h>
-#include <pxr/usd/usdShade/connectableAPI.h>
-#include <pxr/usd/usdShade/material.h>
-#include <pxr/usd/usdShade/materialBindingAPI.h>
-#include <pxr/usd/usdShade/shader.h>
+#include <ufbx.h>
 
-#include <PixieRenderer/Image/ImageTypes.h>
+#include <PixieRenderer/Image/Image2D.h>
+#include <PixieRenderer/Material/PBRMaterial.h>
+
+#include "PixieToolboxCore/Scene/Components.h"
+#include "PixieToolboxCore/Scripts/FreeCameraController.h"
+#include "PixieToolboxCore/Scene/Scene.h"
+#include "PixieToolboxCOre/Texture/TextureLoader.h"
 
 using namespace PixieRenderer;
 
-static std::string TfToString(const pxr::TfToken& t) {
-	return t.GetString();
+namespace PixieToolbox {
+
+namespace {
+
+std::string UfbxStringToStd(const ufbx_string& s) {
+	if (!s.data || s.length == 0)
+		return {};
+	return std::string(s.data, s.length);
 }
 
-static glm::mat4 GfMatrixToGlm(const pxr::GfMatrix4d& m) {
+glm::mat4 UfbxToGlm(const ufbx_matrix& m) {
 	glm::mat4 r(1.0f);
-	for (int row = 0; row < 4; row++)
-		for (int col = 0; col < 4; col++)
-			r[col][row] = static_cast<float>(m[row][col]);
+	for (int c = 0; c < 3; ++c) {
+		r[c] = glm::vec4(
+		    static_cast<float>(m.cols[c].x),
+		    static_cast<float>(m.cols[c].y),
+		    static_cast<float>(m.cols[c].z),
+		    0.0f
+		);
+	}
+	r[3] = glm::
+	    vec4(static_cast<float>(m.cols[3].x), static_cast<float>(m.cols[3].y), static_cast<float>(m.cols[3].z), 1.0f);
 	return r;
 }
 
-static std::string ResolveTexturePath(const std::string& filename) {
-	if (filename.empty())
-		return filename;
-	std::filesystem::path p(filename);
+std::filesystem::path ResolveTexturePath(ufbx_texture* tex, const std::filesystem::path& rootDir) {
+	if (!tex)
+		return {};
+
 	std::error_code ec;
-	if (std::filesystem::exists(p, ec))
-		return p.string();
-	auto local = gAssetRoot / p.filename();
-	if (std::filesystem::exists(local, ec))
-		return local.string();
-	auto rel = gAssetRoot / p;
-	if (std::filesystem::exists(rel, ec))
-		return rel.string();
-	return filename;
+	const std::filesystem::path direct = UfbxStringToStd(tex->filename);
+	if (!direct.empty() && std::filesystem::exists(direct, ec) && !ec)
+		return direct;
+
+	std::filesystem::path rel = UfbxStringToStd(tex->relative_filename);
+	if (rel.empty())
+		rel = direct;
+
+	if (!rel.empty()) {
+		const std::filesystem::path joined = rootDir / rel;
+		if (std::filesystem::exists(joined, ec) && !ec)
+			return joined;
+
+		const std::filesystem::path byName = rootDir / rel.filename();
+		if (std::filesystem::exists(byName, ec) && !ec)
+			return byName;
+	}
+	return direct;
 }
 
-static TextureHandle GetTextureFromInput(
-    const pxr::UsdShadeInput& input,
-    SceneData& s,
+TextureHandle LoadTextureCached(
     IRenderer* r,
-    glm::vec4 fallback,
-    TextureFormat fmt,
-    bool srgb
+    const std::filesystem::path& filePath,
+    std::unordered_map<std::string, TextureHandle>& cache
 ) {
-	if (!input || !input.HasConnectedSource())
-		return CreateSolidTexture(r, fallback, fmt);
+	if (filePath.empty())
+		return {};
 
-	pxr::UsdShadeConnectableAPI source;
-	pxr::TfToken sourceName;
-	pxr::UsdShadeAttributeType sourceType;
-	if (!input.GetConnectedSource(&source, &sourceName, &sourceType))
-		return CreateSolidTexture(r, fallback, fmt);
+	const std::string key = filePath.string();
+	auto it = cache.find(key);
+	if (it != cache.end())
+		return it->second;
 
-	if (!source.GetPrim().IsA<pxr::UsdShadeShader>())
-		return CreateSolidTexture(r, fallback, fmt);
-
-	pxr::UsdShadeShader shader(source.GetPrim());
-	auto fileInput = shader.GetInput(pxr::TfToken("file"));
-	if (!fileInput)
-		return CreateSolidTexture(r, fallback, fmt);
-
-	pxr::SdfAssetPath assetPath;
-	if (!fileInput.Get(&assetPath))
-		return CreateSolidTexture(r, fallback, fmt);
-
-	std::string texPath = assetPath.GetResolvedPath();
-	if (texPath.empty())
-		texPath = assetPath.GetAssetPath();
-	if (texPath.empty())
-		return CreateSolidTexture(r, fallback, fmt);
-
-	return LoadTextureCached(s, r, ResolveTexturePath(texPath), srgb);
+	Texture<glm::vec4> tex = TextureLoader::LoadTextureFloatRGBA(filePath);
+	TextureHandle h{};
+	if (tex.GetPixelsCount() > 0) {
+		h = r->CreateTexture(&tex.GetImage());
+	} else {
+		std::cerr << "[SceneLoader] Failed to load texture: " << key << "\n";
+	}
+	cache[key] = h;
+	return h;
 }
 
-static TextureHandle CreateSolidTexture(IRenderer* r, glm::vec4 v, TextureFormat fmt) {
-	Image2D img;
-	img.resolution = { 1, 1 };
-	img.format = fmt;
-
-	auto toByte = [](float x) { return static_cast<uint8_t>(std::clamp(x * 255.0f + 0.5f, 0.0f, 255.0f)); };
-
-	switch (fmt) {
-	case TextureFormat::RGBA8:
-		img.pixels.resize(4);
-		img.pixels[0] = toByte(v.x);
-		img.pixels[1] = toByte(v.y);
-		img.pixels[2] = toByte(v.z);
-		img.pixels[3] = toByte(v.w);
-		break;
-	case TextureFormat::Red8:
-		img.pixels.resize(1);
-		img.pixels[0] = toByte(v.x);
-		break;
-	case TextureFormat::RGBA32f:
-		img.pixels.resize(sizeof(glm::vec4));
-		*reinterpret_cast<glm::vec4*>(img.pixels.data()) = v;
-		break;
-	case TextureFormat::Red32f:
-		img.pixels.resize(sizeof(float));
-		*reinterpret_cast<float*>(img.pixels.data()) = v.x;
-		break;
-	default:
-		img.pixels.resize(4);
-		img.pixels[0] = toByte(v.x);
-		img.pixels[1] = toByte(v.y);
-		img.pixels[2] = toByte(v.z);
-		img.pixels[3] = toByte(v.w);
-		break;
-	}
-	return r->CreateTexture(&img);
+TextureHandle ResolveMaterialTexture(
+    IRenderer* r,
+    ufbx_texture* tex,
+    const std::filesystem::path& rootDir,
+    std::unordered_map<std::string, TextureHandle>& cache
+) {
+	if (!tex)
+		return {};
+	return LoadTextureCached(r, ResolveTexturePath(tex, rootDir), cache);
 }
 
-namespace PixieToolbox {
+} // namespace
 
-std::unique_ptr<Scene> SceneLoader::LoadScene(std::filesystem::path path) {
-	pxr::UsdStageRefPtr stage = pxr::UsdStage::Open(path);
-	if (!stage) {
-		std::cerr << "Failed to open USD stage: " << path << "\n";
-		std::exit(1);
+std::unique_ptr<Scene> SceneLoader::LoadScene(std::filesystem::path path, IRenderer* r) {
+	auto scene = std::make_unique<Scene>(path.stem().string());
+
+	ufbx_load_opts opts{};
+	opts.generate_missing_normals = true;
+	opts.target_axes = ufbx_axes_right_handed_y_up;
+	opts.target_unit_meters = 1.0f;
+
+	ufbx_error error{};
+	ufbx_scene* fbx = ufbx_load_file(path.string().c_str(), &opts, &error);
+	if (!fbx) {
+		std::cerr << "[SceneLoader] Failed to open FBX: " << path << "\n";
+		if (error.description.data && error.description.length > 0)
+			std::cerr << "  " << std::string(error.description.data, error.description.length) << "\n";
+		return scene;
 	}
 
-	const pxr::UsdTimeCode time = pxr::UsdTimeCode::Default();
+	std::cout << "[SceneLoader] Opened " << path << "\n";
 
-	std::cout << "USD stage opened: " << path << "\n";
+	const std::filesystem::path rootDir = path.parent_path();
+	std::unordered_map<std::string, TextureHandle> textureCache;
 
 	// ------------------------------------------------------------------
-	// Pass 1: материалы
+	// Materials
 	// ------------------------------------------------------------------
-	s.materials.reserve(64);
-	s.materialHandles.reserve(64);
+	std::unordered_map<ufbx_material*, std::shared_ptr<IMaterial>> materialPtrMap;
+	std::unordered_map<ufbx_material*, MaterialHandle> materialHandleMap;
 
-	std::unordered_map<std::string, size_t> matIndex;
+	for (size_t i = 0; i < fbx->materials.count; ++i) {
+		ufbx_material* fbxMat = fbx->materials.data[i];
 
-	for (const auto& prim : stage->Traverse()) {
-		if (!prim.IsA<pxr::UsdShadeMaterial>())
-			continue;
+		auto mat = std::make_shared<PBRMaterial>();
 
-		std::string matKey = prim.GetPath().GetString();
-		if (matIndex.count(matKey))
-			continue;
+		const ufbx_vec4 bc = fbxMat->pbr.base_color.value_vec4;
+		mat->SetAlbedo({ static_cast<float>(bc.x), static_cast<float>(bc.y), static_cast<float>(bc.z) });
+		mat->SetMetallic(static_cast<float>(fbxMat->pbr.metalness.value_real));
+		mat->SetRoughness(static_cast<float>(fbxMat->pbr.roughness.value_real));
 
-		pxr::UsdShadeMaterial usdMat(prim);
-		auto mat = std::make_unique<PBRMaterial>();
-
-		// UsdPreviewSurface: значения по умолчанию
-		glm::vec3 albedo(1.0f);
-		float metallic = 0.0f;
-		float roughness = 0.5f;
-
-		pxr::UsdShadeShader surface = usdMat.ComputeSurfaceSource();
-
-		if (surface) {
-			auto diffuseInput = surface.GetInput(pxr::TfToken("diffuseColor"));
-			auto metallicInput = surface.GetInput(pxr::TfToken("metallic"));
-			auto roughInput = surface.GetInput(pxr::TfToken("roughness"));
-			auto normalInput = surface.GetInput(pxr::TfToken("normal"));
-
-			pxr::GfVec3f diffuseVal(1.0f);
-			if (diffuseInput && diffuseInput.Get(&diffuseVal))
-				albedo = { diffuseVal[0], diffuseVal[1], diffuseVal[2] };
-
-			if (metallicInput && metallicInput.Get(&metallic)) {
-			}
-			if (roughInput && roughInput.Get(&roughness)) {
-			}
-
-			mat->SetAlbedoTexture(GetTextureFromInput(diffuseInput, s, r, { 1, 1, 1, 1 }, TextureFormat::RGBA32f, true)
-			);
-			mat->SetNormalTexture(
-			    GetTextureFromInput(normalInput, s, r, { 0.5f, 0.5f, 1, 1 }, TextureFormat::RGBA32f, false)
-			);
-			mat->SetMetallicTexture(
-			    GetTextureFromInput(metallicInput, s, r, { 0, 0, 0, 1 }, TextureFormat::Red32f, false)
-			);
-			mat->SetRoughnessTexture(GetTextureFromInput(roughInput, s, r, { 1, 1, 1, 1 }, TextureFormat::Red32f, false)
-			);
-		} else {
-			//mat->SetAlbedoTexture(CreateSolidTexture(r, { 1, 1, 1, 1 }, TextureFormat::RGBA32f));
-			//mat->SetNormalTexture(CreateSolidTexture(r, { 0.5f, 0.5f, 1, 1 }, TextureFormat::RGBA32f));
-			//mat->SetMetallicTexture(CreateSolidTexture(r, { 0, 0, 0, 1 }, TextureFormat::Red32f));
-			//mat->SetRoughnessTexture(CreateSolidTexture(r, { 1, 1, 1, 1 }, TextureFormat::Red32f));
-		}
-
-		mat->SetAlbedo(albedo);
-		mat->SetMetallic(metallic);
-		mat->SetRoughness(roughness);
+		if (fbxMat->pbr.base_color.texture_enabled)
+			mat->SetAlbedoTexture(ResolveMaterialTexture(r, fbxMat->pbr.base_color.texture, rootDir, textureCache));
+		if (fbxMat->pbr.metalness.texture_enabled)
+			mat->SetMetallicTexture(ResolveMaterialTexture(r, fbxMat->pbr.metalness.texture, rootDir, textureCache));
+		if (fbxMat->pbr.roughness.texture_enabled)
+			mat->SetRoughnessTexture(ResolveMaterialTexture(r, fbxMat->pbr.roughness.texture, rootDir, textureCache));
+		if (fbxMat->pbr.normal_map.texture_enabled)
+			mat->SetNormalTexture(ResolveMaterialTexture(r, fbxMat->pbr.normal_map.texture, rootDir, textureCache));
 
 		MaterialHandle mh = r->CreateMaterial(mat.get());
 		mat->SetHandle(mh);
 
-		matIndex[matKey] = s.materialHandles.size();
-		s.materialHandles.push_back(mh);
-		s.materials.push_back(std::move(mat));
+		materialPtrMap[fbxMat] = mat;
+		materialHandleMap[fbxMat] = mh;
 	}
 
-	if (s.materialHandles.empty()) {
-		auto mat = std::make_unique<PBRMaterial>();
-		mat->SetAlbedo({ 1, 1, 1 });
+	std::shared_ptr<IMaterial> fallbackMaterialPtr;
+	MaterialHandle fallbackMaterialHandle{};
+	{
+		auto mat = std::make_shared<PBRMaterial>();
+		mat->SetAlbedo({ 1.0f, 1.0f, 1.0f });
 		mat->SetMetallic(0.0f);
 		mat->SetRoughness(0.8f);
-		//mat->SetAlbedoTexture(CreateSolidTexture(r, { 1, 1, 1, 1 }, TextureFormat::RGBA32f));
-		//mat->SetNormalTexture(CreateSolidTexture(r, { 0.5f, 0.5f, 1, 1 }, TextureFormat::RGBA32f));
-		//mat->SetMetallicTexture(CreateSolidTexture(r, { 0, 0, 0, 1 }, TextureFormat::Red32f));
-		//mat->SetRoughnessTexture(CreateSolidTexture(r, { 1, 1, 1, 1 }, TextureFormat::Red32f));
-
 		MaterialHandle mh = r->CreateMaterial(mat.get());
 		mat->SetHandle(mh);
-		s.materialHandles.push_back(mh);
-		s.materials.push_back(std::move(mat));
-		std::cout << "Scene has no materials — using default PBR material.\n";
-	} else {
-		std::cout << "Loaded " << s.materialHandles.size() << " material(s).\n";
+		fallbackMaterialPtr = mat;
+		fallbackMaterialHandle = mh;
 	}
 
+	std::cout << "[SceneLoader] Materials: " << fbx->materials.count
+	          << " (+1 fallback), textures cached: " << textureCache.size() << "\n";
+
 	// ------------------------------------------------------------------
-	// Pass 2: меши
+	// Meshes / entities
 	// ------------------------------------------------------------------
-	size_t meshCount = 0;
+	size_t entityCount = 0;
 
-	for (const auto& prim : stage->Traverse()) {
-		if (!prim.IsA<pxr::UsdGeomMesh>())
-			continue;
-		if (prim.IsPrototype())
-			continue;
-		if (!prim.IsActive())
-			continue;
-		if (prim.IsInstance())
-			continue; // инстансы пока не разворачиваем
-
-		pxr::UsdGeomMesh usdMesh(prim);
-
-		// Пропускаем невидимые
-		auto vis = usdMesh.ComputeVisibility(time);
-		if (vis == pxr::UsdGeomTokens->invisible)
+	for (size_t ni = 0; ni < fbx->nodes.count; ++ni) {
+		ufbx_node* node = fbx->nodes.data[ni];
+		if (!node->mesh || !node->visible)
 			continue;
 
-		// --- Геометрия ---
-		pxr::VtArray<pxr::GfVec3f> points;
-		if (!usdMesh.GetPointsAttr().Get(&points, time) || points.empty())
+		ufbx_mesh* mesh = node->mesh;
+		if (mesh->num_indices == 0 || mesh->num_triangles == 0)
 			continue;
 
-		pxr::VtArray<pxr::GfVec3f> normals;
-		usdMesh.GetNormalsAttr().Get(&normals, time);
-		pxr::TfToken normalsInterp = usdMesh.GetNormalsInterpolation();
+		auto meshData = std::make_shared<Mesh>();
+		const size_t vcount = mesh->num_vertices;
+		meshData->vertexes.resize(vcount);
 
-		// UV: примарвар "st" (стандарт USD). Иногда "UVMap" или "uv".
-		pxr::VtArray<pxr::GfVec2f> uvs;
-		pxr::TfToken uvInterp;
-		{
-			pxr::UsdGeomPrimvarsAPI primvars(prim);
-			auto stPv = primvars.GetPrimvar(pxr::TfToken("st"));
-			if (!stPv)
-				stPv = primvars.GetPrimvar(pxr::TfToken("UVMap"));
-			if (!stPv)
-				stPv = primvars.GetPrimvar(pxr::TfToken("uv"));
-			if (stPv) {
-				stPv.Get(&uvs, time);
-				uvInterp = stPv.GetInterpolation();
+		const bool hasNormal = mesh->vertex_normal.exists;
+		const bool hasUV = mesh->vertex_uv.exists;
+
+		for (size_t vi = 0; vi < vcount; ++vi) {
+			Vertex v{};
+
+			const ufbx_vec3 p = ufbx_get_vertex_vec3(&mesh->vertex_position, vi);
+			v.position = { static_cast<float>(p.x), static_cast<float>(p.y), static_cast<float>(p.z) };
+
+			if (hasNormal) {
+				const ufbx_vec3 n = ufbx_get_vertex_vec3(&mesh->vertex_normal, vi);
+				const glm::vec3 nn(static_cast<float>(n.x), static_cast<float>(n.y), static_cast<float>(n.z));
+				v.normal = glm::length(nn) > 1e-8f ? glm::normalize(nn) : glm::vec3(0, 1, 0);
+			} else {
+				v.normal = { 0.0f, 1.0f, 0.0f };
+			}
+
+			if (hasUV) {
+				const ufbx_vec2 uv = ufbx_get_vertex_vec2(&mesh->vertex_uv, vi);
+				v.uv = { static_cast<float>(uv.x), static_cast<float>(uv.y) };
+			}
+
+			meshData->vertexes[vi] = v;
+		}
+
+		const size_t triCount = static_cast<size_t>(mesh->num_triangles);
+		meshData->indexes.resize(triCount * 3);
+		for (size_t k = 0; k < triCount * 3; ++k)
+			meshData->indexes[k] = static_cast<int32_t>(mesh->vertex_indices.data[k]);
+
+		MeshHandle meshHandle = r->CreateMesh(meshData.get());
+
+		std::shared_ptr<IMaterial> materialPtr = fallbackMaterialPtr;
+		MaterialHandle materialHandle = fallbackMaterialHandle;
+		if (node->materials.count > 0) {
+			auto itPtr = materialPtrMap.find(node->materials.data[0]);
+			auto itHandle = materialHandleMap.find(node->materials.data[0]);
+			if (itPtr != materialPtrMap.end() && itHandle != materialHandleMap.end()) {
+				materialPtr = itPtr->second;
+				materialHandle = itHandle->second;
 			}
 		}
 
-		pxr::VtArray<int> faceVertexCounts;
-		pxr::VtArray<int> faceVertexIndices;
-		usdMesh.GetFaceVertexCountsAttr().Get(&faceVertexCounts, time);
-		usdMesh.GetFaceVertexIndicesAttr().Get(&faceVertexIndices, time);
-		if (faceVertexCounts.empty() || faceVertexIndices.empty())
-			continue;
+		const std::string name = UfbxStringToStd(node->name);
+		Scene::Entity e = scene->CreateEntity(name.empty() ? "Mesh" : name);
 
-		// --- Мировой трансформ ---
-		pxr::UsdGeomXformable xformable(prim);
-		pxr::GfMatrix4d worldXform = xformable.ComputeLocalToWorldTransform(time);
-		glm::mat4 world = GfMatrixToGlm(worldXform);
+		scene->AddComponent<MeshComponent>(e, MeshComponent{ meshData, meshHandle });
+		scene->AddComponent<MaterialComponent>(e, MaterialComponent{ materialPtr, materialHandle });
+		scene->AddComponent<WorldMatrixComponent>(e, WorldMatrixComponent{ UfbxToGlm(node->geometry_to_world) });
 
-		// --- Материал ---
-		pxr::UsdShadeMaterialBindingAPI bindingAPI(prim);
-		pxr::UsdShadeMaterial boundMat = bindingAPI.ComputeBoundMaterial();
-		std::string matKey = boundMat ? boundMat.GetPath().GetString() : "";
-
-		size_t safeId = 0;
-		auto it = matIndex.find(matKey);
-		if (it != matIndex.end())
-			safeId = it->second;
-
-		// --- Триангуляция (fan) ---
-		Mesh meshData;
-		size_t indexOffset = 0;
-
-		for (int fi = 0; fi < static_cast<int>(faceVertexCounts.size()); fi++) {
-			const int count = faceVertexCounts[fi];
-			if (count < 3) {
-				indexOffset += count;
-				continue;
-			}
-
-			for (int i = 2; i < count; i++) {
-				const int tri[3] = { faceVertexIndices[indexOffset],
-					                 faceVertexIndices[indexOffset + i - 1],
-					                 faceVertexIndices[indexOffset + i] };
-
-				// Для faceVarying-примарваров индекс в массиве совпадает
-				// с индексом в faceVertexIndices.
-				const int fvIdx[3] = { static_cast<int>(indexOffset),
-					                   static_cast<int>(indexOffset + i - 1),
-					                   static_cast<int>(indexOffset + i) };
-
-				for (int j = 0; j < 3; j++) {
-					const int vi = tri[j];
-					Vertex v{};
-
-					v.position = { points[vi][0], points[vi][1], points[vi][2] };
-
-					// Нормали
-					if (!normals.empty()) {
-						int ni = (normalsInterp == pxr::UsdGeomTokens->faceVarying) ? fvIdx[j] : vi;
-						if (ni >= 0 && ni < static_cast<int>(normals.size()))
-							v.normal = { normals[ni][0], normals[ni][1], normals[ni][2] };
-					}
-					if (glm::length(v.normal) < 1e-8f)
-						v.normal = glm::vec3(0, 1, 0);
-					else
-						v.normal = glm::normalize(v.normal);
-
-					// UV
-					if (!uvs.empty()) {
-						int ui = (uvInterp == pxr::UsdGeomTokens->faceVarying) ? fvIdx[j] : vi;
-						if (ui >= 0 && ui < static_cast<int>(uvs.size()))
-							v.uv = { uvs[ui][0], uvs[ui][1] };
-					}
-
-					meshData.vertexes.push_back(v);
-					meshData.indexes.push_back(static_cast<int32_t>(meshData.vertexes.size() - 1));
-				}
-			}
-			indexOffset += count;
-		}
-
-		if (meshData.vertexes.empty())
-			continue;
-
-		MeshHandle mh = r->CreateMesh(&meshData);
-		s.meshStorage.push_back(mh);
-		s.items.push_back({ mh, s.materialHandles[safeId], world });
-		meshCount++;
+		++entityCount;
 	}
 
-	std::cout << "Loaded: " << s.items.size() << " draw items, " << s.materialHandles.size() << " material handle(s), "
-	          << s.textureCache.size() << " cached texture(s)\n";
+	std::cout << "[SceneLoader] Loaded " << entityCount << " mesh entit" << (entityCount == 1 ? "y" : "ies") << "\n";
+
+	ufbx_free_scene(fbx);
+
+	// ------------------------------------------------------------------
+	// Camera entity
+	// ------------------------------------------------------------------
+	Scene::Entity cam = scene->CreateEntity("MainCamera");
+	scene->AddComponent<CameraComponent>(cam);
+	TransformComponent& tfc = scene->AddComponent<TransformComponent>(cam);
+
+	const glm::vec3 camPos(0.0f, 1.5f, -4.0f);
+	const float yaw = glm::radians(-90.0f);
+	const float pitch = glm::radians(-5.0f);
+	const glm::vec3 fwd(std::cos(pitch) * std::cos(yaw), std::sin(pitch), std::cos(pitch) * std::sin(yaw));
+	tfc.transform.LookAt(camPos, camPos + fwd, glm::vec3(0, 1, 0));
+
+	ScriptComponent& sc = scene->AddComponent<ScriptComponent>(cam);
+	auto ctrl = std::make_unique<FreeCameraController>(30.0f, 0.2f);
+	ctrl->captureCursor = false; // ImGui owns the cursor.
+	sc.scripts.push_back(std::move(ctrl));
+
+	return scene;
 }
 
 } // namespace PixieToolbox

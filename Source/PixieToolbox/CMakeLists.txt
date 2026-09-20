@@ -11,7 +11,6 @@ set_target_properties(PixieToolbox PROPERTIES
 target_include_directories(PixieToolbox PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 
 target_link_libraries(PixieToolbox PUBLIC PixieToolboxCore)
-target_link_libraries(PixieToolbox PUBLIC PixieUIApplication) 
 target_link_libraries(PixieToolbox PUBLIC imgui)
 
 if (MSVC)

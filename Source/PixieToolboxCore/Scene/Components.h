@@ -33,13 +33,17 @@ struct TransformComponent {
 	Transform transform;
 };
 
+struct WorldMatrixComponent {
+	glm::mat4 matrix{ 1.0f };
+};
+
 struct MeshComponent {
-	Mesh* mesh;
+	std::shared_ptr<Mesh> mesh;
 	MeshHandle meshHandle;
 };
 
 struct MaterialComponent {
-	IMaterial* material;
+	std::shared_ptr<IMaterial> material;
 	MaterialHandle materialHandle;
 };
 
@@ -61,7 +65,6 @@ struct ScriptComponent {
 
 	ScriptComponent(ScriptComponent&&) noexcept = default;
 	ScriptComponent& operator=(ScriptComponent&&) noexcept = default;
-
 };
 
 } // namespace PixieToolbox

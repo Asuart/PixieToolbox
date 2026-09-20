@@ -4,11 +4,10 @@
 #include <backends/imgui_impl_opengl3.h>
 #include <imgui.h>
 
-#include <PixieApplication/Log/Log.h>
 #include <PixieRenderer/Window/IWindow.h>
 #include <PixieRenderer/Window/WindowOpenGL.h>
 
-#include "UIImageOpenGL.h"
+#include "Image/UIImageOpenGL.h"
 #include "UIWindow.h"
 
 using namespace PixieRenderer;

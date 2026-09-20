@@ -1,5 +1,7 @@
 #include "UIVulkan.h"
 
+#include <iostream>
+
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
 #include <imgui.h>
@@ -9,10 +11,10 @@
 #include <PixieRenderer/Window/IWindow.h>
 #include <PixieRenderer/Window/WindowVulkan.h>
 
-#include <PixieApplication/Log/Log.h>
-
-#include "UIImageVulkan.h"
+#include "Image/UIImageVulkan.h"
 #include "UIWindow.h"
+
+#include <PixieRenderer/Window/WindowVulkan.h>
 
 using namespace PixieRenderer;
 
@@ -42,7 +44,7 @@ UIVulkan::UIVulkan(WindowVulkan* mainWindow, bool docking) : UI(mainWindow, dock
 
 	VkDescriptorPool imguiPool;
 	if (vkCreateDescriptorPool(renderer->GetDevice(), &pool_info, nullptr, &imguiPool) != VK_SUCCESS) {
-		PixieApp::Log::Error("Failed to create Vulkan descriptor pool.");
+		std::cout << "Failed to create Vulkan descriptor pool.\n";
 		exit(1);
 	}
 	m_pool = imguiPool;
@@ -57,7 +59,7 @@ UIVulkan::UIVulkan(WindowVulkan* mainWindow, bool docking) : UI(mainWindow, dock
 	ImGui::StyleColorsDark();
 
 	if (!ImGui_ImplGlfw_InitForVulkan(mainWindow->GetGLFWWindow(), true)) {
-		PixieApp::Log::Error("Failed to init imgui for glfw vulkan.");
+		std::cout << "Failed to init imgui for glfw vulkan.\n";
 		exit(2);
 	}
 
@@ -75,7 +77,7 @@ UIVulkan::UIVulkan(WindowVulkan* mainWindow, bool docking) : UI(mainWindow, dock
 	init_info.PipelineInfoMain.Subpass = 0;
 
 	if (!ImGui_ImplVulkan_Init(&init_info)) {
-		PixieApp::Log::Error("Failed to init imgui for vulkan.");
+		std::cout << "Failed to init imgui for vulkan.\n";
 		exit(3);
 	}
 

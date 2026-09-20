@@ -6,10 +6,9 @@
 #include <string>
 #include <vector>
 
-#include <PixieApplication/Time/GlobalTimer.h>
+#include <PixieToolboxCore/Time/GlobalTimer.h>
 
 using namespace PixieRenderer;
-using namespace PixieApp;
 
 namespace PixieToolbox {
 

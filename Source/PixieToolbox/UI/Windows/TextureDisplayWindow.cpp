@@ -3,12 +3,12 @@
 #include <cstring>
 #include <string>
 
-#include "../../dependencies/imgui/backends/imgui_impl_vulkan.h"
-#include <imgui.h>
+#include <backends/imgui_impl_vulkan.h>
+#include<imgui.h>
 
 #include <PixieRenderer/Renderer/Vulkan/RendererVulkan.h>
 
-#include "PixieUIApplication/UI.h"
+#include "PixieToolbox/UI/UI.h"
 
 using namespace PixieRenderer;
 

@@ -6,7 +6,6 @@
 #include <imgui.h>
 #include <vulkan/vulkan.hpp>
 
-#include <PixieApplication/Log/Log.h>
 #include <PixieRenderer/Window/IWindow.h>
 
 #include "UIWindow.h"

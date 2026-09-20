@@ -5,6 +5,10 @@
 
 #include "Image/UIImage.h"
 
+namespace PixieRenderer {
+class IWindow;
+}
+
 namespace PixieToolbox {
 
 using namespace PixieRenderer;

@@ -1,5 +1,5 @@
 #pragma once
-#include "PixieUIApplication/UIWindow.h"
+#include "PixieToolbox/UI/UIWindow.h"
 
 namespace PixieToolbox {
 

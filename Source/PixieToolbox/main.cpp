@@ -6,13 +6,13 @@
 #include <iostream>
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
 
 #include <GLFW/glfw3.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include <PixieRenderer/Camera/Camera.h>
 #include <PixieRenderer/ComputeProgram/BlurComputeProgram.h>
 #include <PixieRenderer/Material/PBRMaterial.h>
 #include <PixieRenderer/Material/PresentMaterial.h>
@@ -28,55 +28,49 @@
 #include <PixieToolboxCore/Time/ApplicationTime.h>
 #include <PixieToolboxCore/UserInput/UserInput.h>
 
+#include <PixieToolboxCore/Scene/Components.h>
+#include <PixieToolboxCore/Scripts/FreeCameraController.h>
+#include <PixieToolboxCore/Scene/Scene.h>
+
 #include "PixieToolbox/UI/UI.h"
 #include "PixieToolbox/UI/UIVulkan.h"
 #include "PixieToolbox/UI/Windows/ApplicationStatsWindow.h"
 #include "PixieToolbox/UI/Windows/DemoWindow.h"
 #include "PixieToolbox/UI/Windows/TextureDisplayWindow.h"
 
+#include <PixieToolboxCore/Scene/SceneLoader.h>
+
 using namespace PixieRenderer;
 using namespace PixieToolbox;
 
-static constexpr int kMaxTextureSize = 2048;
 static constexpr glm::uvec2 kRenderSize = { 1280, 720 };
+static constexpr const char* kCameraEntityName = "MainCamera";
 
-static std::filesystem::path gAssetRoot;
+// ============================================================================
+// Shared camera data (namespace scope — used by SceneStage).
+// ============================================================================
 
-struct SceneData {
-	struct CameraUBO {
-		glm::mat4 view;
-		glm::mat4 projection;
-	};
-	struct CameraState {
-		glm::vec3 position = glm::vec3(0.0f, 1.5f, -4.0f);
-		float yaw = -90.0f;
-		float pitch = -5.0f;
-		float moveSpeed = 30.0f;
-		float mouseSensitivity = 0.2f;
-	} cam;
-
-	CameraUBO cameraData{};
-
-	std::vector<std::unique_ptr<PBRMaterial>> materials;
-	std::vector<MaterialHandle> materialHandles;
-	std::unordered_map<std::string, TextureHandle> textureCache;
-	std::vector<MeshHandle> meshStorage;
-
-	struct DrawItem {
-		MeshHandle mesh;
-		MaterialHandle material;
-		glm::mat4 transform;
-	};
-	std::vector<DrawItem> items;
-
-	BufferHandle cameraUBO;
-	BufferHandle cameraPositionUBO;
+struct CameraUBO {
+	glm::mat4 view;
+	glm::mat4 projection;
 };
+
+// ============================================================================
+// SceneStage
+//
+// Uses entt's registry directly (via Scene::Registry()) instead of
+// Scene::View / Scene::GetComponent to avoid the single-arg template
+// ambiguity in Scene.h. Also avoids CameraComponent because `Camera` in
+// PixieToolboxCore/Scene/Camera.h has no default constructor — the camera
+// entity is looked up by name and its transform is read instead.
+// ============================================================================
 
 class SceneStage : public IRenderStage {
   public:
-	SceneStage(SceneData& s, RGResource output) : m_scene(s), m_output(output) {
+	SceneStage(Scene& scene, RGResource output, BufferHandle camUBO, BufferHandle camPosUBO, glm::uvec2 res)
+	    : m_scene(scene), m_output(output), m_cameraUBO(camUBO), m_cameraPositionUBO(camPosUBO), m_resolution(res) {
 	}
+
 	std::string_view GetName() const override {
 		return "Scene";
 	}
@@ -93,34 +87,86 @@ class SceneStage : public IRenderStage {
 
 	void BindResources(RenderGraphContext& ctx) override {
 		IRenderer* r = ctx.GetRenderer();
-		const glm::vec4 camPos = glm::vec4(glm::vec3(glm::inverse(m_scene.cameraData.view)[3]), 1.0f);
-		r->UpdateBuffer(m_scene.cameraUBO, std::as_bytes(std::span{ &m_scene.cameraData, 1 }));
-		r->UpdateBuffer(m_scene.cameraPositionUBO, std::as_bytes(std::span{ &camPos, 1 }));
-		for (MaterialHandle mh : m_scene.materialHandles) {
-			if (!mh)
-				continue;
-			r->BindBuffer(mh, "CameraUBO", m_scene.cameraUBO);
-			r->BindBuffer(mh, "CameraPosition", m_scene.cameraPositionUBO);
+
+		// --- Camera: look up the entity by name, read its Transform. ---
+		glm::mat4 view(1.0f);
+		glm::vec3 camPos(0.0f);
+		bool foundCamera = false;
+
+		Scene::Entity camEntity = m_scene.FindEntity(kCameraEntityName);
+		if (camEntity != Scene::Null) {
+			if (auto* tc = m_scene.TryGetComponent<TransformComponent>(camEntity)) {
+				camPos = tc->transform.GetPosition();
+				view = glm::lookAt(camPos, camPos + tc->transform.GetForward(), tc->transform.GetUp());
+				foundCamera = true;
+			}
 		}
-		for (auto& m : m_scene.materials)
-			m->Bind(r);
+		if (!foundCamera) {
+			view = glm::lookAt(glm::vec3(0.0f, 1.5f, -4.0f), glm::vec3(0.0f), glm::vec3(0, 1, 0));
+		}
+
+		CameraUBO camData{};
+		camData.view = view;
+		const float aspect = static_cast<float>(m_resolution.x) / static_cast<float>(m_resolution.y);
+		glm::mat4 proj = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 5000.0f);
+		proj[1][1] *= -1.0f; // Vulkan Y-flip
+		camData.projection = proj;
+
+		r->UpdateBuffer(m_cameraUBO, std::as_bytes(std::span{ &camData, 1 }));
+
+		const glm::vec4 camPos4(camPos, 1.0f);
+		r->UpdateBuffer(m_cameraPositionUBO, std::as_bytes(std::span{ &camPos4, 1 }));
+
+		// --- Bind camera UBOs + per-material resources once per unique material. ---
+		entt::registry& reg = m_scene.Registry();
+		std::unordered_set<IMaterial*> bound;
+
+		auto matView = reg.view<MaterialComponent>();
+		for (auto e : matView) {
+			MaterialComponent& mc = matView.get<MaterialComponent>(e);
+			if (!mc.material || !mc.materialHandle)
+				continue;
+			if (!bound.insert(mc.material.get()).second)
+				continue;
+
+			r->BindBuffer(mc.materialHandle, "CameraUBO", m_cameraUBO);
+			r->BindBuffer(mc.materialHandle, "CameraPosition", m_cameraPositionUBO);
+			mc.material->Bind(r);
+		}
 	}
 
 	void Execute(RenderGraphContext& ctx) override {
 		IRenderer* r = ctx.GetRenderer();
-		for (const auto& item : m_scene.items) {
+		entt::registry& reg = m_scene.Registry();
+
+		auto drawView = reg.view<MeshComponent, MaterialComponent, WorldMatrixComponent>();
+		for (auto e : drawView) {
+			MeshComponent& meshc = drawView.get<MeshComponent>(e);
+			MaterialComponent& matc = drawView.get<MaterialComponent>(e);
+			WorldMatrixComponent& wtc = drawView.get<WorldMatrixComponent>(e);
+
+			if (!meshc.meshHandle || !matc.materialHandle)
+				continue;
+
 			DrawRequest req{};
-			req.material = item.material;
-			req.mesh = item.mesh;
-			req.inlineData = std::as_bytes(std::span{ &item.transform, 1 });
+			req.material = matc.materialHandle;
+			req.mesh = meshc.meshHandle;
+			req.inlineData = std::as_bytes(std::span{ &wtc.matrix, 1 });
 			r->DrawMesh(req);
 		}
 	}
 
   private:
-	SceneData& m_scene;
+	Scene& m_scene;
 	RGResource m_output;
+	BufferHandle m_cameraUBO;
+	BufferHandle m_cameraPositionUBO;
+	glm::uvec2 m_resolution;
 };
+
+// ============================================================================
+// BlurStage — box blur via compute shader.
+// ============================================================================
 
 class BlurStage : public IRenderStage {
   public:
@@ -166,6 +212,10 @@ class BlurStage : public IRenderStage {
 	glm::uvec2 m_size;
 };
 
+// ============================================================================
+// PresentStage — blits the final texture to the swapchain.
+// ============================================================================
+
 class PresentStage : public IRenderStage {
   public:
 	PresentStage(RGResource input, MeshHandle quad, MaterialHandle mat) : m_input(input), m_quad(quad), m_mat(mat) {
@@ -204,70 +254,22 @@ class PresentStage : public IRenderStage {
 };
 
 // ============================================================================
-// Camera
-// ============================================================================
-
-static void UpdateCamera(SceneData& s, float dt, glm::uvec2 resolution) {
-	auto& c = s.cam;
-	const bool looking = UserInput::IsMouseButtonDown(GLFW_MOUSE_BUTTON_RIGHT);
-	if (looking) {
-		auto md = UserInput::GetMouseDelta();
-		c.yaw += static_cast<float>(md.x) * c.mouseSensitivity;
-		c.pitch -= static_cast<float>(md.y) * c.mouseSensitivity;
-		c.pitch = glm::clamp(c.pitch, -89.0f, 89.0f);
-	}
-	const float yr = glm::radians(c.yaw), pr = glm::radians(c.pitch);
-	const glm::vec3 forward(std::cos(pr) * std::cos(yr), std::sin(pr), std::cos(pr) * std::sin(yr));
-	const glm::vec3 up(0, 1, 0);
-	const glm::vec3 right = glm::normalize(glm::cross(forward, up));
-
-	float speed = c.moveSpeed;
-	if (UserInput::IsKeyDown(GLFW_KEY_LEFT_SHIFT))
-		speed *= 4.0f;
-
-	glm::vec3 vel(0);
-	if (UserInput::IsKeyDown(GLFW_KEY_W))
-		vel += forward;
-	if (UserInput::IsKeyDown(GLFW_KEY_S))
-		vel -= forward;
-	if (UserInput::IsKeyDown(GLFW_KEY_D))
-		vel += right;
-	if (UserInput::IsKeyDown(GLFW_KEY_A))
-		vel -= right;
-	if (UserInput::IsKeyDown(GLFW_KEY_SPACE))
-		vel += up;
-	if (UserInput::IsKeyDown(GLFW_KEY_LEFT_CONTROL))
-		vel -= up;
-	if (glm::length(vel) > 0.0f)
-		c.position += glm::normalize(vel) * speed * dt;
-
-	s.cameraData.view = glm::lookAt(c.position, c.position + forward, up);
-	const float aspect = float(resolution.x) / float(resolution.y);
-	glm::mat4 proj = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 5000.0f);
-	proj[1][1] *= -1.0f; // Vulkan Y-flip
-	s.cameraData.projection = proj;
-}
-
-// ============================================================================
 // main
 // ============================================================================
-
-using namespace PixieToolbox;
 
 int main() {
 	WindowVulkan window("PixieRenderer", glm::ivec2(kRenderSize));
 	IRenderer* renderer = window.GetRenderer();
 
-	// ---- USD scene (unchanged) ----
-	const std::string scenePath = "/home/asuart/Repos/PixieRenderer/assets/main_sponza/NewSponza_Main_USD_Yup_003.usda";
-	gAssetRoot = std::filesystem::path(scenePath).parent_path();
+	// ---- Load FBX scene (materials, meshes, camera entity, script) ----
+	const std::string scenePath = "/home/asuart/Repos/PixieRenderer/assets/Example.fbx";
+	std::unique_ptr<Scene> scene = SceneLoader::LoadScene(scenePath, renderer);
 
-	SceneData scene;
-	//LoadScene(scene, renderer, scenePath);
-	scene.cameraUBO = renderer->CreateBuffer(BufferType::Uniform, sizeof(SceneData::CameraUBO));
-	scene.cameraPositionUBO = renderer->CreateBuffer(BufferType::Uniform, sizeof(glm::vec4));
+	// Shared UBOs referenced by every PBR material in the scene.
+	BufferHandle cameraUBO = renderer->CreateBuffer(BufferType::Uniform, sizeof(CameraUBO));
+	BufferHandle cameraPositionUBO = renderer->CreateBuffer(BufferType::Uniform, sizeof(glm::vec4));
 
-	// ---- Present quad (unchanged) ----
+	// ---- Present quad (fullscreen triangle) ----
 	PresentMaterial presentMat;
 	MaterialHandle presentMatHandle = renderer->CreateMaterial(&presentMat);
 
@@ -279,11 +281,11 @@ int main() {
 	fsTri.indexes = { 0, 1, 2 };
 	MeshHandle fsTriHandle = renderer->CreateMesh(&fsTri);
 
-	// ---- Blur (unchanged) ----
+	// ---- Blur compute program ----
 	BlurComputeProgram blurProgram;
 	ComputeProgramHandle blurProgramHandle = renderer->CreateComputeProgram(&blurProgram);
 
-	// ---- Render graph (unchanged) ----
+	// ---- Render graph ----
 	RenderGraph rg(renderer);
 
 	RenderTargetDesc rtDesc;
@@ -300,7 +302,7 @@ int main() {
 	blurDesc.storageImage = true;
 	RGResource blurColor = rg.RegisterTexture("BlurColor", blurDesc);
 
-	rg.AddStage(std::make_unique<SceneStage>(scene, sceneColor));
+	rg.AddStage(std::make_unique<SceneStage>(*scene, sceneColor, cameraUBO, cameraPositionUBO, kRenderSize));
 	rg.AddStage(std::make_unique<BlurStage>(sceneColor, blurColor, blurProgramHandle, kRenderSize));
 	rg.AddStage(std::make_unique<PresentStage>(blurColor, fsTriHandle, presentMatHandle));
 	rg.Compile();
@@ -321,16 +323,18 @@ int main() {
 		if (!renderer->BeginFrame())
 			continue;
 
-		// Let each UIWindow update any offscreen resources (e.g.
-		// TextureDisplayWindow may re-render into its own FBO).
+		Time::Update();
+
+		// Let each UIWindow update any offscreen resources before the frame.
 		ui->OnBeforeDrawFrame();
 
-		UpdateCamera(scene, Time::deltaTime, window.GetResolution());
+		// Run ECS scripts (FreeCameraController updates the camera Transform).
+		scene->Update();
+
 		rg.Execute();
 
-		// ImGui draw data is submitted by UIVulkan through the present
-		// overlay hook, so this must be called after rg.Execute() and
-		// before EndFrame() while the present pass is alive.
+		// ImGui draw data is submitted via the present overlay hook, so this
+		// must run after rg.Execute() and before EndFrame().
 		ui->Draw();
 
 		renderer->EndFrame();
@@ -342,5 +346,7 @@ int main() {
 
 	renderer->WaitIdle();
 	rg.Clear();
+
+	// scene is destroyed here; it owns all shared_ptr<Mesh> and shared_ptr<IMaterial>.
 	return 0;
 }
