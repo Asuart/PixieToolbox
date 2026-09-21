@@ -11,11 +11,12 @@
 
 #include <PixieRenderer/Image/Image2D.h>
 #include <PixieRenderer/Material/PBRMaterial.h>
+#include <PixieRenderer/Renderer/IRenderer.h>
 
 #include "PixieToolboxCore/Scene/Components.h"
-#include "PixieToolboxCore/Scripts/FreeCameraController.h"
 #include "PixieToolboxCore/Scene/Scene.h"
-#include "PixieToolboxCOre/Texture/TextureLoader.h"
+#include "PixieToolboxCore/Scripts/FreeCameraController.h"
+#include "PixieToolboxCore/Texture/TextureLoader.h"
 
 using namespace PixieRenderer;
 
@@ -70,7 +71,7 @@ std::filesystem::path ResolveTexturePath(ufbx_texture* tex, const std::filesyste
 }
 
 TextureHandle LoadTextureCached(
-    IRenderer* r,
+    std::shared_ptr<IRenderer> r,
     const std::filesystem::path& filePath,
     std::unordered_map<std::string, TextureHandle>& cache
 ) {
@@ -94,7 +95,7 @@ TextureHandle LoadTextureCached(
 }
 
 TextureHandle ResolveMaterialTexture(
-    IRenderer* r,
+    std::shared_ptr<IRenderer> r,
     ufbx_texture* tex,
     const std::filesystem::path& rootDir,
     std::unordered_map<std::string, TextureHandle>& cache
@@ -106,8 +107,8 @@ TextureHandle ResolveMaterialTexture(
 
 } // namespace
 
-std::unique_ptr<Scene> SceneLoader::LoadScene(std::filesystem::path path, IRenderer* r) {
-	auto scene = std::make_unique<Scene>(path.stem().string());
+std::shared_ptr<Scene> SceneLoader::LoadScene(std::filesystem::path path, std::shared_ptr<IRenderer> r) {
+	std::shared_ptr<Scene> scene = std::make_shared<Scene>(path.stem().string());
 
 	ufbx_load_opts opts{};
 	opts.generate_missing_normals = true;
@@ -128,9 +129,6 @@ std::unique_ptr<Scene> SceneLoader::LoadScene(std::filesystem::path path, IRende
 	const std::filesystem::path rootDir = path.parent_path();
 	std::unordered_map<std::string, TextureHandle> textureCache;
 
-	// ------------------------------------------------------------------
-	// Materials
-	// ------------------------------------------------------------------
 	std::unordered_map<ufbx_material*, std::shared_ptr<IMaterial>> materialPtrMap;
 	std::unordered_map<ufbx_material*, MaterialHandle> materialHandleMap;
 
@@ -176,9 +174,6 @@ std::unique_ptr<Scene> SceneLoader::LoadScene(std::filesystem::path path, IRende
 	std::cout << "[SceneLoader] Materials: " << fbx->materials.count
 	          << " (+1 fallback), textures cached: " << textureCache.size() << "\n";
 
-	// ------------------------------------------------------------------
-	// Meshes / entities
-	// ------------------------------------------------------------------
 	size_t entityCount = 0;
 
 	for (size_t ni = 0; ni < fbx->nodes.count; ++ni) {
@@ -251,22 +246,19 @@ std::unique_ptr<Scene> SceneLoader::LoadScene(std::filesystem::path path, IRende
 
 	ufbx_free_scene(fbx);
 
-	// ------------------------------------------------------------------
-	// Camera entity
-	// ------------------------------------------------------------------
 	Scene::Entity cam = scene->CreateEntity("MainCamera");
 	scene->AddComponent<CameraComponent>(cam);
 	TransformComponent& tfc = scene->AddComponent<TransformComponent>(cam);
 
 	const glm::vec3 camPos(0.0f, 1.5f, -4.0f);
-	const float yaw = glm::radians(-90.0f);
-	const float pitch = glm::radians(-5.0f);
+	constexpr float yaw = glm::radians(-90.0f);
+	constexpr float pitch = glm::radians(-5.0f);
 	const glm::vec3 fwd(std::cos(pitch) * std::cos(yaw), std::sin(pitch), std::cos(pitch) * std::sin(yaw));
 	tfc.transform.LookAt(camPos, camPos + fwd, glm::vec3(0, 1, 0));
 
 	ScriptComponent& sc = scene->AddComponent<ScriptComponent>(cam);
 	auto ctrl = std::make_unique<FreeCameraController>(30.0f, 0.2f);
-	ctrl->captureCursor = false; // ImGui owns the cursor.
+	ctrl->captureCursor = false;
 	sc.scripts.push_back(std::move(ctrl));
 
 	return scene;

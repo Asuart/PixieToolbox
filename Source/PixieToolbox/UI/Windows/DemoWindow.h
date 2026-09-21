@@ -5,7 +5,7 @@ namespace PixieToolbox {
 
 class DemoWindow : public UIWindow {
   public:
-	DemoWindow(UI* ui, PixieRenderer::IRenderer* renderer);
+	DemoWindow(UI* ui, std::shared_ptr<IRenderer> renderer);
 
 	void Draw() override;
 };

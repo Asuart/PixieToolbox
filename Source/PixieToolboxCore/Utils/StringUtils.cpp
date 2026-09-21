@@ -53,4 +53,20 @@ float StringUtils::ToFloat(const std::string& str, float fallback) {
 	}
 }
 
+int32_t StringUtils::ToInt32(const std::string& str, int32_t fallback) {
+	try {
+		return std::stoi(str);
+	} catch (const std::exception&) {
+		return fallback;
+	}
+}
+
+uint32_t StringUtils::ToUInt32(const std::string& str, uint32_t fallback) {
+	try {
+		return static_cast<uint32_t>(std::stoul(str));
+	} catch (const std::exception&) {
+		return fallback;
+	}
+}
+
 } // namespace PixieToolbox

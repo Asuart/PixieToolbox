@@ -39,12 +39,12 @@ std::filesystem::path ResolvePath(const std::filesystem::path& filePath, bool& o
 }
 
 bool ComputeResizedSize(int w, int h, int& nw, int& nh) {
-	if (w <= (int32_t)Config::s_maxTextureResolution && h <= (int32_t)Config::s_maxTextureResolution) {
+	if (w <= (int32_t)Config::GetMaxTextureResolution() && h <= (int32_t)Config::GetMaxTextureResolution()) {
 		return false;
 	}
 	const float scale = std::
-	    min(static_cast<float>(Config::s_maxTextureResolution) / static_cast<float>(w),
-	        static_cast<float>(Config::s_maxTextureResolution) / static_cast<float>(h));
+	    min(static_cast<float>(Config::GetMaxTextureResolution()) / static_cast<float>(w),
+	        static_cast<float>(Config::GetMaxTextureResolution()) / static_cast<float>(h));
 	nw = std::max(1, static_cast<int>(std::lround(static_cast<float>(w) * scale)));
 	nh = std::max(1, static_cast<int>(std::lround(static_cast<float>(h) * scale)));
 	return true;

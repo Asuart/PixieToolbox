@@ -1,24 +1,24 @@
 #pragma once
 #include "UIImage.h"
 
-#include <PixieRenderer/Renderer/IRenderer.h>
+#include <memory>
 
 namespace PixieToolbox {
 
 class UIImageOpenGL : public UIImage {
   public:
-	explicit UIImageOpenGL(PixieRenderer::IRenderer* renderer);
+	explicit UIImageOpenGL(std::shared_ptr<IRenderer> renderer);
 	virtual ~UIImageOpenGL();
 
-	void SetTexture(PixieRenderer::TextureHandle texture) override;
-	void SetFrameBuffer(PixieRenderer::FrameBufferHandle frameBuffer) override;
+	void SetTexture(TextureHandle texture) override;
+	void SetFrameBuffer(FrameBufferHandle frameBuffer) override;
 	ImTextureID GetTextureID() const override;
 
   private:
-	PixieRenderer::IRenderer* m_renderer;
+	std::shared_ptr<IRenderer> m_renderer;
 	ImTextureID m_displayTexture = 0;
-	PixieRenderer::TextureHandle m_currentTexture = {};
-	PixieRenderer::FrameBufferHandle m_currentFrameBuffer = {};
+	TextureHandle m_currentTexture = {};
+	FrameBufferHandle m_currentFrameBuffer = {};
 };
 
 } // namespace PixieToolbox

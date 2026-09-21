@@ -112,7 +112,7 @@ void TextureDisplayWindow::UpdatePlaneUBO() {
 	}
 }
 
-TextureDisplayWindow::TextureDisplayWindow(UI* ui, IRenderer* renderer, TextureHandle texture)
+TextureDisplayWindow::TextureDisplayWindow(UI* ui, std::shared_ptr<IRenderer> renderer, TextureHandle texture)
     : UIWindow(ui, renderer), m_targetTexture(texture) {
 	m_viewportResolution = { 1280, 720 };
 	m_frameBuffer = m_renderer->CreateFrameBuffer(m_viewportResolution, TextureFormat::RGBA32f);
@@ -124,7 +124,7 @@ TextureDisplayWindow::TextureDisplayWindow(UI* ui, IRenderer* renderer, TextureH
 	SetTexture(texture);
 }
 
-TextureDisplayWindow::TextureDisplayWindow(UI* ui, IRenderer* renderer, FrameBufferHandle frameBuffer)
+TextureDisplayWindow::TextureDisplayWindow(UI* ui, std::shared_ptr<IRenderer> renderer, FrameBufferHandle frameBuffer)
     : UIWindow(ui, renderer), m_targetFrameBuffer(frameBuffer) {
 	m_viewportResolution = { 1280, 720 };
 	m_frameBuffer = m_renderer->CreateFrameBuffer(m_viewportResolution, TextureFormat::RGBA32f);

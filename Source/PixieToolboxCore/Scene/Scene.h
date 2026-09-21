@@ -12,7 +12,6 @@ class Scene {
 	using Entity = entt::entity;
 	static constexpr Entity Null = entt::null;
 
-	Scene() = default;
 	Scene(const std::string& name);
 	~Scene() = default;
 

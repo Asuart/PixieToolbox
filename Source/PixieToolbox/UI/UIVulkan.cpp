@@ -20,7 +20,7 @@ using namespace PixieRenderer;
 
 namespace PixieToolbox {
 
-UIVulkan::UIVulkan(WindowVulkan* mainWindow, bool docking) : UI(mainWindow, docking) {
+UIVulkan::UIVulkan(IWindow* mainWindow, bool docking) : UI(mainWindow, docking) {
 	VkDescriptorPoolSize pool_sizes[] = { { VK_DESCRIPTOR_TYPE_SAMPLER, 5000 },
 		                                  { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5000 },
 		                                  { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 5000 },
@@ -40,7 +40,7 @@ UIVulkan::UIVulkan(WindowVulkan* mainWindow, bool docking) : UI(mainWindow, dock
 	pool_info.poolSizeCount = std::size(pool_sizes);
 	pool_info.pPoolSizes = pool_sizes;
 
-	RendererVulkan* renderer = reinterpret_cast<WindowVulkan*>(mainWindow)->GetRendererVulkan();
+	RendererVulkan* renderer = reinterpret_cast<RendererVulkan*>(mainWindow->GetRenderer().get());
 
 	VkDescriptorPool imguiPool;
 	if (vkCreateDescriptorPool(renderer->GetDevice(), &pool_info, nullptr, &imguiPool) != VK_SUCCESS) {
@@ -81,7 +81,6 @@ UIVulkan::UIVulkan(WindowVulkan* mainWindow, bool docking) : UI(mainWindow, dock
 		exit(3);
 	}
 
-	// Draw ImGui while the present render pass is still active.
 	renderer->SetPresentOverlayHook([renderer]() {
 		ImDrawData* drawData = ImGui::GetDrawData();
 		if (!drawData || drawData->CmdListsCount == 0)
@@ -92,7 +91,7 @@ UIVulkan::UIVulkan(WindowVulkan* mainWindow, bool docking) : UI(mainWindow, dock
 
 UIVulkan::~UIVulkan() {
 	if (m_window) {
-		if (auto* renderer = reinterpret_cast<WindowVulkan*>(m_window)->GetRendererVulkan()) {
+		if (auto* renderer = reinterpret_cast<RendererVulkan*>(m_window->GetRenderer().get())) {
 			renderer->SetPresentOverlayHook(nullptr);
 		}
 	}
@@ -102,7 +101,7 @@ UIVulkan::~UIVulkan() {
 	ImGui::DestroyContext();
 
 	if (m_pool != VK_NULL_HANDLE && m_window) {
-		if (auto* renderer = reinterpret_cast<WindowVulkan*>(m_window)->GetRendererVulkan()) {
+		if (auto* renderer = reinterpret_cast<RendererVulkan*>(m_window->GetRenderer().get())) {
 			vkDestroyDescriptorPool(renderer->GetDevice(), m_pool, nullptr);
 		}
 		m_pool = VK_NULL_HANDLE;
@@ -152,18 +151,15 @@ void UIVulkan::Draw() {
 		ImGui::UpdatePlatformWindows();
 		ImGui::RenderPlatformWindowsDefault();
 	}
-
-	// Actual draw data is submitted via SetPresentOverlayHook while the
-	// present render pass is active.
 }
 
-UIImage* UIVulkan::CreateUIImage(IRenderer* renderer, FrameBufferHandle handle) {
+UIImage* UIVulkan::CreateUIImage(std::shared_ptr<IRenderer> renderer, FrameBufferHandle handle) {
 	UIImageVulkan* image = new UIImageVulkan(renderer);
 	image->SetFrameBuffer(handle);
 	return image;
 }
 
-UIImage* UIVulkan::CreateUIImage(IRenderer* renderer, TextureHandle handle) {
+UIImage* UIVulkan::CreateUIImage(std::shared_ptr<IRenderer> renderer, TextureHandle handle) {
 	UIImageVulkan* image = new UIImageVulkan(renderer);
 	image->SetTexture(handle);
 	return image;

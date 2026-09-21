@@ -6,7 +6,7 @@ using namespace PixieRenderer;
 
 namespace PixieToolbox {
 
-DemoWindow::DemoWindow(UI* ui, IRenderer* renderer) : UIWindow(ui, renderer) {
+DemoWindow::DemoWindow(UI* ui, std::shared_ptr<IRenderer> renderer) : UIWindow(ui, renderer) {
 }
 
 void DemoWindow::Draw() {

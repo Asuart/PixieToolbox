@@ -6,7 +6,7 @@ using namespace PixieRenderer;
 
 namespace PixieToolbox {
 
-UIImageOpenGL::UIImageOpenGL(IRenderer* renderer) : m_renderer(renderer) {
+UIImageOpenGL::UIImageOpenGL(std::shared_ptr<IRenderer> renderer) : m_renderer(renderer) {
 }
 
 UIImageOpenGL::~UIImageOpenGL() {
@@ -16,7 +16,7 @@ void UIImageOpenGL::SetTexture(TextureHandle texture) {
 	m_currentTexture = texture;
 	m_currentFrameBuffer = {};
 	if (texture) {
-		RendererOpenGL* renderer = reinterpret_cast<RendererOpenGL*>(m_renderer);
+		RendererOpenGL* renderer = reinterpret_cast<RendererOpenGL*>(m_renderer.get());
 		GLuint glTex = renderer->GetInternalTextureID(texture);
 		m_displayTexture = (ImTextureID)(uintptr_t)glTex;
 	} else {
@@ -28,7 +28,7 @@ void UIImageOpenGL::SetFrameBuffer(FrameBufferHandle frameBuffer) {
 	m_currentFrameBuffer = frameBuffer;
 	m_currentTexture = {};
 	if (frameBuffer) {
-		RendererOpenGL* renderer = reinterpret_cast<RendererOpenGL*>(m_renderer);
+		RendererOpenGL* renderer = reinterpret_cast<RendererOpenGL*>(m_renderer.get());
 		GLuint glTex = renderer->GetInternalFrameBufferColorAttachmentID(frameBuffer);
 		m_displayTexture = (ImTextureID)(uintptr_t)glTex;
 	} else {

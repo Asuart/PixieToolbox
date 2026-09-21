@@ -5,7 +5,7 @@ namespace PixieToolbox {
 
 class ApplicationStatsWindow : public UIWindow {
   public:
-	ApplicationStatsWindow(UI* ui, PixieRenderer::IRenderer* renderer);
+	ApplicationStatsWindow(UI* ui, std::shared_ptr<IRenderer> renderer);
 
 	void Draw() override;
 };

@@ -1,12 +1,14 @@
 #pragma once
 #include <vector>
+#include <memory>
 
-#include <PixieRenderer/Renderer/IRenderer.h>
+#include <PixieRenderer/Renderer/RenderAPI.h>
 
 #include "Image/UIImage.h"
 
 namespace PixieRenderer {
 class IWindow;
+class IRenderer;
 }
 
 namespace PixieToolbox {
@@ -17,26 +19,23 @@ class UIWindow;
 
 class UI {
   public:
-	UI(IWindow* window, bool docking);
+	static std::unique_ptr<UI> Create(IWindow* window, bool docking, RenderAPI api);
+
 	virtual ~UI();
 
 	virtual void AddWindow(UIWindow* window);
 
 	void OnBeforeDrawFrame();
 	virtual void Draw() = 0;
-	virtual UIImage* CreateUIImage(
-	    IRenderer* renderer,
-	    FrameBufferHandle handle
-	) = 0;
-	virtual UIImage* CreateUIImage(
-	    IRenderer* renderer,
-	    TextureHandle handle
-	) = 0;
+	virtual UIImage* CreateUIImage(std::shared_ptr<IRenderer> renderer, FrameBufferHandle handle) = 0;
+	virtual UIImage* CreateUIImage(std::shared_ptr<IRenderer> renderer, TextureHandle handle) = 0;
 
   protected:
 	IWindow* m_window;
 	std::vector<UIWindow*> m_windows;
 	bool m_isDocking;
+
+	UI(IWindow* window, bool docking);
 
   public:
 	template <typename T> std::vector<T*> GetWindowOfType() {

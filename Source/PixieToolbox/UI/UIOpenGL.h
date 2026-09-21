@@ -1,24 +1,16 @@
 #pragma once
 #include "UI.h"
 
-namespace PixieRenderer {
-class WindowOpenGL;
-}
-
 namespace PixieToolbox {
 
 class UIOpenGL : public UI {
   public:
-	UIOpenGL(PixieRenderer::WindowOpenGL* window, bool docking);
+	UIOpenGL(IWindow* window, bool docking);
 	~UIOpenGL();
 
 	void Draw();
-	UIImage* CreateUIImage(
-	    PixieRenderer::IRenderer* renderer,
-	    PixieRenderer::FrameBufferHandle handle
-	) override;
-	UIImage* CreateUIImage(PixieRenderer::IRenderer* renderer, PixieRenderer::TextureHandle handle)
-	    override;
+	UIImage* CreateUIImage(std::shared_ptr<IRenderer> renderer, FrameBufferHandle handle) override;
+	UIImage* CreateUIImage(std::shared_ptr<IRenderer> renderer, TextureHandle handle) override;
 };
 
 } // namespace PixieToolbox

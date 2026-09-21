@@ -1,6 +1,8 @@
 #pragma once
 #include "UIImage.h"
 
+#include <memory>
+
 #include <vulkan/vulkan.h>
 
 #include <PixieRenderer/Renderer/IRenderer.h>
@@ -9,18 +11,18 @@ namespace PixieToolbox {
 
 class UIImageVulkan : public UIImage {
   public:
-	explicit UIImageVulkan(PixieRenderer::IRenderer* renderer);
+	explicit UIImageVulkan(std::shared_ptr<IRenderer> renderer);
 	virtual ~UIImageVulkan();
 
-	void SetTexture(PixieRenderer::TextureHandle texture) override;
-	void SetFrameBuffer(PixieRenderer::FrameBufferHandle frameBuffer) override;
+	void SetTexture(TextureHandle texture) override;
+	void SetFrameBuffer(FrameBufferHandle frameBuffer) override;
 	ImTextureID GetTextureID() const override;
 
   private:
-	PixieRenderer::IRenderer* m_renderer;
+	std::shared_ptr<IRenderer> m_renderer;
 	VkDescriptorSet m_displayTexture = VK_NULL_HANDLE;
-	PixieRenderer::TextureHandle m_currentTexture = {};
-	PixieRenderer::FrameBufferHandle m_currentFrameBuffer = {};
+	TextureHandle m_currentTexture = {};
+	FrameBufferHandle m_currentFrameBuffer = {};
 };
 
 } // namespace PixieToolbox

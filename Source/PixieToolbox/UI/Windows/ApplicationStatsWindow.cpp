@@ -12,8 +12,7 @@ using namespace PixieRenderer;
 
 namespace PixieToolbox {
 
-ApplicationStatsWindow::ApplicationStatsWindow(UI* ui, IRenderer* renderer)
-    : UIWindow(ui, renderer) {
+ApplicationStatsWindow::ApplicationStatsWindow(UI* ui, std::shared_ptr<IRenderer> renderer) : UIWindow(ui, renderer) {
 }
 
 void ApplicationStatsWindow::Draw() {

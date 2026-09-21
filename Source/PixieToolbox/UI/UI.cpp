@@ -1,19 +1,30 @@
 #include "UI.h"
 
 #include <backends/imgui_impl_opengl3.h>
-#include <backends/imgui_impl_sdl2.h>
 #include <backends/imgui_impl_vulkan.h>
 #include <imgui.h>
 #include <vulkan/vulkan.hpp>
 
 #include <PixieRenderer/Window/IWindow.h>
 
+#include "UIOpenGL.h"
+#include "UIVulkan.h"
 #include "UIWindow.h"
 
 namespace PixieToolbox {
 
-UI::UI(PixieRenderer::IWindow* mainWindow, bool docking)
-    : m_window(mainWindow), m_isDocking(docking) {
+std::unique_ptr<UI> UI::Create(IWindow* window, bool docking, RenderAPI api) {
+	switch (api) {
+	case RenderAPI::OpenGL:
+		return std::make_unique<UIOpenGL>(window, docking);
+	case RenderAPI::Vulkan:
+		return std::make_unique<UIVulkan>(window, docking);
+	default:
+		return nullptr;
+	}
+}
+
+UI::UI(PixieRenderer::IWindow* mainWindow, bool docking) : m_window(mainWindow), m_isDocking(docking) {
 	IMGUI_CHECKVERSION();
 }
 

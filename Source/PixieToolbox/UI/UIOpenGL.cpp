@@ -14,7 +14,7 @@ using namespace PixieRenderer;
 
 namespace PixieToolbox {
 
-UIOpenGL::UIOpenGL(WindowOpenGL* mainWindow, bool docking) : UI(mainWindow, docking) {
+UIOpenGL::UIOpenGL(IWindow* mainWindow, bool docking) : UI(mainWindow, docking) {
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
@@ -49,8 +49,8 @@ void UIOpenGL::Draw() {
 	ImGui::SetNextWindowViewport(viewport->ID);
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-	windowFlags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |
-	               ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+	windowFlags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
+	               ImGuiWindowFlags_NoMove;
 	windowFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
 
 	if (dockspaceFlags & ImGuiDockNodeFlags_PassthruCentralNode) {
@@ -83,13 +83,13 @@ void UIOpenGL::Draw() {
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-UIImage* UIOpenGL::CreateUIImage(IRenderer* renderer, FrameBufferHandle handle) {
+UIImage* UIOpenGL::CreateUIImage(std::shared_ptr<IRenderer> renderer, FrameBufferHandle handle) {
 	UIImageOpenGL* image = new UIImageOpenGL(renderer);
 	image->SetFrameBuffer(handle);
 	return image;
 }
 
-UIImage* UIOpenGL::CreateUIImage(IRenderer* renderer, TextureHandle handle) {
+UIImage* UIOpenGL::CreateUIImage(std::shared_ptr<IRenderer> renderer, TextureHandle handle) {
 	UIImageOpenGL* image = new UIImageOpenGL(renderer);
 	image->SetTexture(handle);
 	return image;

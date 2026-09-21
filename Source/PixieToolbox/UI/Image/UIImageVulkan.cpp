@@ -6,7 +6,7 @@
 
 namespace PixieToolbox {
 
-UIImageVulkan::UIImageVulkan(PixieRenderer::IRenderer* renderer) : m_renderer(renderer) {
+UIImageVulkan::UIImageVulkan(std::shared_ptr<IRenderer> renderer) : m_renderer(renderer) {
 }
 
 UIImageVulkan::~UIImageVulkan() {
@@ -16,7 +16,7 @@ UIImageVulkan::~UIImageVulkan() {
 	}
 }
 
-void UIImageVulkan::SetTexture(PixieRenderer::TextureHandle texture) {
+void UIImageVulkan::SetTexture(TextureHandle texture) {
 	if (m_displayTexture != VK_NULL_HANDLE) {
 		ImGui_ImplVulkan_RemoveTexture(m_displayTexture);
 		m_displayTexture = VK_NULL_HANDLE;
@@ -26,7 +26,7 @@ void UIImageVulkan::SetTexture(PixieRenderer::TextureHandle texture) {
 	m_currentFrameBuffer = {};
 
 	if (texture) {
-		auto* renderer = reinterpret_cast<PixieRenderer::RendererVulkan*>(m_renderer);
+		auto* renderer = reinterpret_cast<RendererVulkan*>(m_renderer.get());
 		m_displayTexture = ImGui_ImplVulkan_AddTexture(
 		    renderer->GetTextureSampler(texture),
 		    renderer->GetTextureImageView(texture),
@@ -35,7 +35,7 @@ void UIImageVulkan::SetTexture(PixieRenderer::TextureHandle texture) {
 	}
 }
 
-void UIImageVulkan::SetFrameBuffer(PixieRenderer::FrameBufferHandle frameBuffer) {
+void UIImageVulkan::SetFrameBuffer(FrameBufferHandle frameBuffer) {
 	if (m_displayTexture != VK_NULL_HANDLE) {
 		ImGui_ImplVulkan_RemoveTexture(m_displayTexture);
 		m_displayTexture = VK_NULL_HANDLE;
@@ -45,7 +45,7 @@ void UIImageVulkan::SetFrameBuffer(PixieRenderer::FrameBufferHandle frameBuffer)
 	m_currentTexture = {};
 
 	if (frameBuffer) {
-		auto* renderer = reinterpret_cast<PixieRenderer::RendererVulkan*>(m_renderer);
+		auto* renderer = reinterpret_cast<RendererVulkan*>(m_renderer.get());
 		m_displayTexture = ImGui_ImplVulkan_AddTexture(
 		    renderer->GetFrameBufferSampler(frameBuffer),
 		    renderer->GetFrameBufferColorImageView(frameBuffer),

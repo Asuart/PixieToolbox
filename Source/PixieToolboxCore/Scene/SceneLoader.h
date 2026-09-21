@@ -2,15 +2,19 @@
 #include <filesystem>
 #include <memory>
 
-#include <PixieRenderer/Renderer/IRenderer.h>
-
-#include "PixieToolboxCore/Scene/Scene.h"
+namespace PixieRenderer {
+class IRenderer;
+}
 
 namespace PixieToolbox {
 
+using namespace PixieRenderer;
+
+class Scene;
+
 class SceneLoader {
   public:
-	static std::unique_ptr<Scene> LoadScene(std::filesystem::path path, PixieRenderer::IRenderer* renderer);
+	static std::shared_ptr<Scene> LoadScene(std::filesystem::path path, std::shared_ptr<IRenderer> renderer);
 };
 
 } // namespace PixieToolbox
