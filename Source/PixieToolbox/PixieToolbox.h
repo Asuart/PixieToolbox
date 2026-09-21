@@ -1,5 +1,6 @@
 #pragma once
 #include <filesystem>
+#include <memory>
 #include <string>
 
 #include <glm/glm.hpp>
@@ -18,6 +19,7 @@ using namespace PixieRenderer;
 
 class UI;
 class Scene;
+class TextureDisplayWindow;
 
 class PixieToolboxApp {
   public:
@@ -34,6 +36,7 @@ class PixieToolboxApp {
 	std::unique_ptr<UI> m_ui = nullptr;
 	std::shared_ptr<IRenderer> m_renderer = nullptr;
 	std::shared_ptr<Scene> m_scene = nullptr;
+	TextureDisplayWindow* m_textureDisplayWindow = nullptr;
 
 	std::string m_pendingDropFile;
 

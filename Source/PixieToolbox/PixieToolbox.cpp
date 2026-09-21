@@ -1,7 +1,6 @@
 #include "PixieToolbox.h"
 
 #include <iostream>
-#include <memory>
 
 #include <PixieRenderer/PixieRenderer.h>
 #include <PixieRenderer/RenderGraph/RenderGraph.h>
@@ -31,9 +30,11 @@ PixieToolboxApp::PixieToolboxApp(const std::string& name, glm::uvec2 resolution,
 	m_renderer = m_window->GetRenderer();
 	m_ui = UI::Create(m_window.get(), true, api);
 
+	m_textureDisplayWindow = new TextureDisplayWindow(m_ui.get(), m_renderer, TextureHandle());
+
 	m_ui->AddWindow(new DemoWindow(m_ui.get(), m_renderer));
 	m_ui->AddWindow(new ApplicationStatsWindow(m_ui.get(), m_renderer));
-	m_ui->AddWindow(new TextureDisplayWindow(m_ui.get(), m_renderer, TextureHandle()));
+	m_ui->AddWindow(m_textureDisplayWindow);
 
 	m_window->SetDropCallback([this](const std::vector<std::string>& files) {
 		if (files.empty())
@@ -42,7 +43,11 @@ PixieToolboxApp::PixieToolboxApp(const std::string& name, glm::uvec2 resolution,
 		std::cout << "[SceneDrop] Queued: " << m_pendingDropFile << "\n";
 	});
 
-	m_scene = std::make_shared<Scene>("new Scene");
+	if (!Config::GetLastScenePath().empty()) {
+		m_pendingDropFile = Config::GetLastScenePath().string();
+	} else {
+		m_scene = std::make_shared<Scene>("New Scene");
+	}
 
 	UpdateRenderGraph();
 }
@@ -126,7 +131,7 @@ void PixieToolboxApp::UpdateRenderGraph() {
 
 	m_renderGraph->Compile();
 
-	// m_ui->AddWindow(new TextureDisplayWindow(m_ui.get(), m_renderer, m_renderGraph->GetResource(blurColor).texture));
+	m_textureDisplayWindow->SetTexture(m_renderGraph->GetResource(blurColor).texture);
 }
 
 } // namespace PixieToolbox
