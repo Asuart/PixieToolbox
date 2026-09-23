@@ -10,7 +10,6 @@ namespace PixieToolbox {
 PresentStage::PresentStage(std::shared_ptr<IRenderer> renderer, RGResource input)
     : IRenderStage(renderer), m_input(input) {
 	PresentMaterial presentMat;
-	MaterialHandle presentMatHandle = renderer->CreateMaterial(&presentMat);
 
 	Mesh fsTri;
 	fsTri.vertexes.resize(3);
@@ -18,7 +17,9 @@ PresentStage::PresentStage(std::shared_ptr<IRenderer> renderer, RGResource input
 	fsTri.vertexes[1].position = { 3.0f, -1.0f, 0.0f };
 	fsTri.vertexes[2].position = { -1.0f, 3.0f, 0.0f };
 	fsTri.indexes = { 0, 1, 2 };
-	MeshHandle fsTriHandle = renderer->CreateMesh(&fsTri);
+
+	m_mat = renderer->CreateMaterial(&presentMat);
+	m_quad = renderer->CreateMesh(&fsTri);
 }
 
 std::string_view PresentStage::GetName() const {

@@ -24,8 +24,10 @@ class SceneStage : public IRenderStage {
 	void BindResources(RenderGraphContext& ctx) override;
 	void Execute(RenderGraphContext& ctx) override;
 
+	void SetScene(std::shared_ptr<Scene> scene);
+
   private:
-	std::unique_ptr<Scene> m_scene;
+	std::shared_ptr<Scene> m_scene;
 	RGResource m_output;
 	BufferHandle m_cameraUBO;
 	BufferHandle m_cameraPositionUBO;

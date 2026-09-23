@@ -214,10 +214,20 @@ std::shared_ptr<Scene> SceneLoader::LoadScene(std::filesystem::path path, std::s
 			meshData->vertexes[vi] = v;
 		}
 
-		const size_t triCount = static_cast<size_t>(mesh->num_triangles);
-		meshData->indexes.resize(triCount * 3);
-		for (size_t k = 0; k < triCount * 3; ++k)
-			meshData->indexes[k] = static_cast<int32_t>(mesh->vertex_indices.data[k]);
+		meshData->indexes.clear();
+		meshData->indexes.reserve(mesh->num_triangles * 3);
+
+		std::vector<uint32_t> triIndices(mesh->max_face_triangles * 3);
+
+		for (size_t fi = 0; fi < mesh->faces.count; ++fi) {
+			ufbx_face face = mesh->faces.data[fi];
+			uint32_t numTris = ufbx_triangulate_face(triIndices.data(), triIndices.size(), mesh, face);
+
+			const size_t corners = static_cast<size_t>(numTris) * 3;
+			for (size_t i = 0; i < corners; ++i) {
+				meshData->indexes.push_back(static_cast<int32_t>(triIndices[i]));
+			}
+		}
 
 		MeshHandle meshHandle = r->CreateMesh(meshData.get());
 

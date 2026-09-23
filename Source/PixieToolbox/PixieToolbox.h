@@ -20,6 +20,8 @@ using namespace PixieRenderer;
 class UI;
 class Scene;
 class TextureDisplayWindow;
+class SceneTreeWindow;
+class SceneStage;
 
 class PixieToolboxApp {
   public:
@@ -37,8 +39,11 @@ class PixieToolboxApp {
 	std::shared_ptr<IRenderer> m_renderer = nullptr;
 	std::shared_ptr<Scene> m_scene = nullptr;
 	TextureDisplayWindow* m_textureDisplayWindow = nullptr;
+	SceneTreeWindow* m_sceneTreeWindow = nullptr;
 
 	std::string m_pendingDropFile;
+
+	SceneStage* m_sceneStage = nullptr;
 
 	void UpdateRenderGraph();
 };

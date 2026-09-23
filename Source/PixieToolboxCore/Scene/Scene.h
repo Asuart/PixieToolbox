@@ -42,7 +42,7 @@ class Scene {
 	const std::vector<Entity>& GetChildren(Entity entity) const;
 
 	template <typename T, typename... Args> T& AddComponent(Entity entity, Args&&... args) {
-		return m_registry.emplace<T>(entity, std::forward<Args>(args)...);
+		return m_registry.emplace_or_replace<T>(entity, std::forward<Args>(args)...);
 	}
 
 	template <typename T> T& GetComponent(Entity entity) {

@@ -13,9 +13,9 @@ Scene::Scene(const std::string& name) : m_name(name) {
 
 Scene::Entity Scene::CreateEntity(const std::string& name) {
 	Entity e = m_registry.create();
-	m_registry.emplace<NameComponent>(e, NameComponent{ name });
-	m_registry.emplace<HierarchyComponent>(e);
-	m_registry.emplace<TransformComponent>(e);
+	m_registry.emplace_or_replace<NameComponent>(e, NameComponent{ name });
+	m_registry.emplace_or_replace<HierarchyComponent>(e);
+	m_registry.emplace_or_replace<TransformComponent>(e);
 	return e;
 }
 
@@ -56,7 +56,7 @@ void Scene::SetParent(Entity child, Entity parent) {
 
 	auto* h = m_registry.try_get<HierarchyComponent>(child);
 	if (!h) {
-		h = &m_registry.emplace<HierarchyComponent>(child);
+		h = &m_registry.emplace_or_replace<HierarchyComponent>(child);
 	}
 	if (h->parent != Null) {
 		if (auto* ph = m_registry.try_get<HierarchyComponent>(h->parent)) {
@@ -69,7 +69,7 @@ void Scene::SetParent(Entity child, Entity parent) {
 	if (parent != Null) {
 		auto* ph = m_registry.try_get<HierarchyComponent>(parent);
 		if (!ph) {
-			ph = &m_registry.emplace<HierarchyComponent>(parent);
+			ph = &m_registry.emplace_or_replace<HierarchyComponent>(parent);
 		}
 		ph->children.push_back(child);
 	}

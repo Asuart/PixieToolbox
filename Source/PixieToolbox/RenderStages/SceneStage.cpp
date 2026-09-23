@@ -14,8 +14,8 @@ namespace PixieToolbox {
 
 SceneStage::SceneStage(std::shared_ptr<IRenderer> renderer, RGResource output, glm::uvec2 res)
     : IRenderStage(renderer), m_output(output), m_resolution(res) {
-	BufferHandle cameraUBO = renderer->CreateBuffer(BufferType::Uniform, sizeof(CameraUBO));
-	BufferHandle cameraPositionUBO = renderer->CreateBuffer(BufferType::Uniform, sizeof(glm::vec4));
+	m_cameraUBO = renderer->CreateBuffer(BufferType::Uniform, sizeof(CameraUBO));
+	m_cameraPositionUBO = renderer->CreateBuffer(BufferType::Uniform, sizeof(glm::vec4));
 }
 
 std::string_view SceneStage::GetName() const {
@@ -94,20 +94,20 @@ void SceneStage::Execute(RenderGraphContext& ctx) {
 	entt::registry& reg = m_scene->Registry();
 
 	auto drawView = reg.view<MeshComponent, MaterialComponent, WorldMatrixComponent>();
-	for (auto e : drawView) {
-		MeshComponent& meshc = drawView.get<MeshComponent>(e);
-		MaterialComponent& matc = drawView.get<MaterialComponent>(e);
-		WorldMatrixComponent& wtc = drawView.get<WorldMatrixComponent>(e);
-
+	drawView.each([&](entt::entity /*e*/, MeshComponent& meshc, MaterialComponent& matc, WorldMatrixComponent& wtc) {
 		if (!meshc.meshHandle || !matc.materialHandle)
-			continue;
+			return;
 
 		DrawRequest req{};
 		req.material = matc.materialHandle;
 		req.mesh = meshc.meshHandle;
 		req.inlineData = std::as_bytes(std::span{ &wtc.matrix, 1 });
 		r->DrawMesh(req);
-	}
+	});
+}
+
+void SceneStage::SetScene(std::shared_ptr<Scene> scene) {
+	m_scene = scene;
 }
 
 } // namespace PixieToolbox

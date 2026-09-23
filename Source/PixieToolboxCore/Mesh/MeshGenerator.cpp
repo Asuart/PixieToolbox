@@ -218,7 +218,7 @@ Mesh MeshGenerator::UVSphere(float radius, uint32_t rings, uint32_t segments) {
 
 		for (uint32_t x = 0; x <= segments; ++x) {
 			const float u = static_cast<float>(x) / static_cast<float>(segments);
-			const float theta = u * glm::two_pi<float>(); // 0..2π
+			const float theta = u * glm::two_pi<float>();
 
 			const glm::vec3 n = {
 				std::sin(phi) * std::cos(theta),
