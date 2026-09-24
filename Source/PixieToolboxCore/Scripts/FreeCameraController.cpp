@@ -6,10 +6,10 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 
-#include "PixieToolboxCore/Time/ApplicationTime.h"
-#include "PixieToolboxCore/UserInput/UserInput.h"
 #include "PixieToolboxCore/Scene/Components.h"
 #include "PixieToolboxCore/Scene/Scene.h"
+#include "PixieToolboxCore/Time/ApplicationTime.h"
+#include "PixieToolboxCore/UserInput/UserInput.h"
 
 namespace PixieToolbox {
 
@@ -22,10 +22,10 @@ void FreeCameraController::OnStart(Scene& scene, entt::entity entity) {
 	if (auto* tc = scene.TryGetComponent<TransformComponent>(entity)) {
 		t = &tc->transform;
 	}
-	if (!t)
+	if (!t) {
 		return;
+	}
 
-	// Восстанавливаем yaw/pitch из текущего направления камеры
 	const glm::vec3 f = glm::normalize(t->GetForward());
 	m_yaw = glm::degrees(std::atan2(f.z, f.x));
 	m_pitch = glm::degrees(std::asin(glm::clamp(f.y, -1.0f, 1.0f)));
@@ -37,29 +37,34 @@ void FreeCameraController::OnStart(Scene& scene, entt::entity entity) {
 
 void FreeCameraController::OnUpdate(Scene& scene, entt::entity entity) {
 	auto* tc = scene.TryGetComponent<TransformComponent>(entity);
-	if (!tc)
+	if (!tc) {
 		return;
+	}
 
 	Transform& t = tc->transform;
 	const float dt = Time::deltaTime;
 
-	// --- Перемещение ---
 	const float speed = moveSpeed * (UserInput::IsKeyDown(GLFW_KEY_LEFT_SHIFT) ? boostMultiplier : 1.0f) * dt;
 
-	if (UserInput::IsKeyDown(GLFW_KEY_W))
+	if (UserInput::IsKeyDown(GLFW_KEY_W)) {
 		t.Translate(t.GetForward() * speed);
-	if (UserInput::IsKeyDown(GLFW_KEY_S))
+	}
+	if (UserInput::IsKeyDown(GLFW_KEY_S)) {
 		t.Translate(t.GetForward() * -speed);
-	if (UserInput::IsKeyDown(GLFW_KEY_D))
+	}
+	if (UserInput::IsKeyDown(GLFW_KEY_D)) {
 		t.Translate(t.GetRight() * speed);
-	if (UserInput::IsKeyDown(GLFW_KEY_A))
+	}
+	if (UserInput::IsKeyDown(GLFW_KEY_A)) {
 		t.Translate(t.GetRight() * -speed);
-	if (UserInput::IsKeyDown(GLFW_KEY_SPACE))
+	}
+	if (UserInput::IsKeyDown(GLFW_KEY_SPACE)) {
 		t.Translate(t.GetUp() * speed);
-	if (UserInput::IsKeyDown(GLFW_KEY_LEFT_CONTROL))
+	}
+	if (UserInput::IsKeyDown(GLFW_KEY_LEFT_CONTROL)) {
 		t.Translate(t.GetUp() * -speed);
+	}
 
-	// --- Вращение (только при зажатой ПКМ) ---
 	if (UserInput::IsMouseButtonDown(GLFW_MOUSE_BUTTON_RIGHT)) {
 		const glm::dvec2 md = UserInput::GetMouseDelta();
 

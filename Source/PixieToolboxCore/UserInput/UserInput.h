@@ -4,7 +4,7 @@
 
 #include <glm/glm.hpp>
 
-struct GLFWwindow;
+#include <GLFW/glfw3.h>
 
 namespace PixieToolbox {
 
@@ -50,6 +50,12 @@ class UserInput {
 	inline static bool s_firstMouse = true;
 	inline static bool s_cursorCaptured = false;
 	inline static bool s_hasFocus = true;
+
+	inline static GLFWkeyfun s_prevKeyCallback = nullptr;
+	inline static GLFWmousebuttonfun s_prevMouseButtonCallback = nullptr;
+	inline static GLFWcursorposfun s_prevCursorPosCallback = nullptr;
+	inline static GLFWscrollfun s_prevScrollCallback = nullptr;
+	inline static GLFWwindowfocusfun s_prevWindowFocusCallback = nullptr;
 
 	static void KeyCallback(GLFWwindow*, int key, int scancode, int action, int mods);
 	static void MouseButtonCallback(GLFWwindow*, int button, int action, int mods);

@@ -10,11 +10,11 @@ void UserInput::Initialize(GLFWwindow* window) {
 		return;
 	}
 
-	glfwSetKeyCallback(window, KeyCallback);
-	glfwSetMouseButtonCallback(window, MouseButtonCallback);
-	glfwSetCursorPosCallback(window, CursorPosCallback);
-	glfwSetScrollCallback(window, ScrollCallback);
-	glfwSetWindowFocusCallback(window, WindowFocusCallback);
+	s_prevKeyCallback = glfwSetKeyCallback(window, KeyCallback);
+	s_prevMouseButtonCallback = glfwSetMouseButtonCallback(window, MouseButtonCallback);
+	s_prevCursorPosCallback = glfwSetCursorPosCallback(window, CursorPosCallback);
+	s_prevScrollCallback = glfwSetScrollCallback(window, ScrollCallback);
+	s_prevWindowFocusCallback = glfwSetWindowFocusCallback(window, WindowFocusCallback);
 
 	s_keyDown.fill(0);
 	s_keyPressed.fill(0);
@@ -32,13 +32,18 @@ void UserInput::Initialize(GLFWwindow* window) {
 
 void UserInput::Shutdown() {
 	if (s_window) {
-		glfwSetKeyCallback(s_window, nullptr);
-		glfwSetMouseButtonCallback(s_window, nullptr);
-		glfwSetCursorPosCallback(s_window, nullptr);
-		glfwSetScrollCallback(s_window, nullptr);
-		glfwSetWindowFocusCallback(s_window, nullptr);
+		glfwSetKeyCallback(s_window, s_prevKeyCallback);
+		glfwSetMouseButtonCallback(s_window, s_prevMouseButtonCallback);
+		glfwSetCursorPosCallback(s_window, s_prevCursorPosCallback);
+		glfwSetScrollCallback(s_window, s_prevScrollCallback);
+		glfwSetWindowFocusCallback(s_window, s_prevWindowFocusCallback);
 	}
 	s_window = nullptr;
+	s_prevKeyCallback = nullptr;
+	s_prevMouseButtonCallback = nullptr;
+	s_prevCursorPosCallback = nullptr;
+	s_prevScrollCallback = nullptr;
+	s_prevWindowFocusCallback = nullptr;
 }
 
 void UserInput::Reset() {
@@ -111,7 +116,11 @@ bool UserInput::IsCursorCaptured() {
 	return s_cursorCaptured;
 }
 
-void UserInput::KeyCallback(GLFWwindow*, int key, int /*scancode*/, int action, int /*mods*/) {
+void UserInput::KeyCallback(GLFWwindow* w, int key, int scancode, int action, int mods) {
+	if (s_prevKeyCallback) {
+		s_prevKeyCallback(w, key, scancode, action, mods);
+	}
+
 	if (key < 0 || static_cast<size_t>(key) >= s_keyDown.size()) {
 		return;
 	}
@@ -131,7 +140,11 @@ void UserInput::KeyCallback(GLFWwindow*, int key, int /*scancode*/, int action, 
 	}
 }
 
-void UserInput::MouseButtonCallback(GLFWwindow*, int button, int action, int /*mods*/) {
+void UserInput::MouseButtonCallback(GLFWwindow* w, int button, int action, int mods) {
+	if (s_prevMouseButtonCallback) {
+		s_prevMouseButtonCallback(w, button, action, mods);
+	}
+
 	if (button < 0 || static_cast<size_t>(button) >= s_mouseDown.size()) {
 		return;
 	}
@@ -144,7 +157,11 @@ void UserInput::MouseButtonCallback(GLFWwindow*, int button, int action, int /*m
 	}
 }
 
-void UserInput::CursorPosCallback(GLFWwindow*, double x, double y) {
+void UserInput::CursorPosCallback(GLFWwindow* w, double x, double y) {
+	if (s_prevCursorPosCallback) {
+		s_prevCursorPosCallback(w, x, y);
+	}
+
 	const glm::dvec2 newPos(x, y);
 	if (s_firstMouse) {
 		s_mousePos = newPos;
@@ -155,11 +172,20 @@ void UserInput::CursorPosCallback(GLFWwindow*, double x, double y) {
 	s_mousePos = newPos;
 }
 
-void UserInput::ScrollCallback(GLFWwindow*, double xoff, double yoff) {
+
+void UserInput::ScrollCallback(GLFWwindow* w, double xoff, double yoff) {
+	if (s_prevScrollCallback) {
+		s_prevScrollCallback(w, xoff, yoff);
+	}
+
 	s_mouseScroll += glm::dvec2(xoff, yoff);
 }
 
-void UserInput::WindowFocusCallback(GLFWwindow*, int focused) {
+void UserInput::WindowFocusCallback(GLFWwindow* w, int focused) {
+	if (s_prevWindowFocusCallback) {
+		s_prevWindowFocusCallback(w, focused);
+	}
+
 	s_hasFocus = (focused == GLFW_TRUE);
 	if (!s_hasFocus) {
 		s_keyDown.fill(0);

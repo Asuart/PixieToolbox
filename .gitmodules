@@ -14,3 +14,6 @@
 [submodule "Dependencies/ufbx"]
 	path = Dependencies/ufbx
 	url = https://github.com/ufbx/ufbx.git
+[submodule "Dependencies/tinygltf"]
+	path = Dependencies/tinygltf
+	url = https://github.com/syoyo/tinygltf.git

@@ -74,13 +74,15 @@ void SceneStage::BindResources(RenderGraphContext& ctx) {
 	auto matView = reg.view<MaterialComponent>();
 	for (auto e : matView) {
 		MaterialComponent& mc = matView.get<MaterialComponent>(e);
-		if (!mc.material || !mc.materialHandle)
+		if (!mc.material || !mc.materialHandle) {
 			continue;
-		if (!bound.insert(mc.material.get()).second)
+		}
+		if (!bound.insert(mc.material.get()).second) {
 			continue;
+		}
 
-		r->BindBuffer(mc.materialHandle, "CameraUBO", m_cameraUBO);
-		r->BindBuffer(mc.materialHandle, "CameraPosition", m_cameraPositionUBO);
+		r->BindBuffer(mc.materialHandle, "camera", m_cameraUBO);
+		r->BindBuffer(mc.materialHandle, "cameraPosition", m_cameraPositionUBO);
 		mc.material->Bind(r);
 	}
 }
@@ -95,8 +97,9 @@ void SceneStage::Execute(RenderGraphContext& ctx) {
 
 	auto drawView = reg.view<MeshComponent, MaterialComponent, WorldMatrixComponent>();
 	drawView.each([&](entt::entity /*e*/, MeshComponent& meshc, MaterialComponent& matc, WorldMatrixComponent& wtc) {
-		if (!meshc.meshHandle || !matc.materialHandle)
+		if (!meshc.meshHandle || !matc.materialHandle) {
 			return;
+		}
 
 		DrawRequest req{};
 		req.material = matc.materialHandle;

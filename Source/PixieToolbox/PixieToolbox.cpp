@@ -12,6 +12,7 @@
 #include <PixieToolboxCore/Scene/SceneLoader.h>
 #include <PixieToolboxCore/Time/ApplicationTime.h>
 #include <PixieToolboxCore/Time/GlobalTimer.h>
+#include <PixieToolboxCore/UserInput/UserInput.h>
 
 #include "UI/UI.h"
 #include "UI/Windows/ApplicationStatsWindow.h"
@@ -23,10 +24,13 @@
 #include "RenderStages/PresentStage.h"
 #include "RenderStages/SceneStage.h"
 
+#include <PixieToolboxCore/LogCategories.h>
+
 namespace PixieToolbox {
 
 PixieToolboxApp::PixieToolboxApp(const std::string& name, glm::uvec2 resolution, RenderAPI api) {
 	Config::Load();
+	Log::InstallDefaultCallback();
 
 	m_window = IWindow::Create(name, resolution, api);
 	m_renderer = m_window->GetRenderer();
@@ -40,10 +44,10 @@ PixieToolboxApp::PixieToolboxApp(const std::string& name, glm::uvec2 resolution,
 	m_ui->AddWindow(m_textureDisplayWindow);
 	m_ui->AddWindow(m_sceneTreeWindow);
 
-
 	m_window->SetDropCallback([this](const std::vector<std::string>& files) {
-		if (files.empty())
+		if (files.empty()) {
 			return;
+		}
 		m_pendingDropFile = files.front();
 		std::cout << "[SceneDrop] Queued: " << m_pendingDropFile << "\n";
 	});
@@ -55,9 +59,13 @@ PixieToolboxApp::PixieToolboxApp(const std::string& name, glm::uvec2 resolution,
 	}
 
 	UpdateRenderGraph();
+
+	UserInput::Initialize(m_window->GetGLFWWindow());
 }
 
 PixieToolboxApp::~PixieToolboxApp() {
+	UserInput::Shutdown();
+
 	m_renderer->WaitIdle();
 	m_ui.reset();
 	m_renderGraph.reset();
