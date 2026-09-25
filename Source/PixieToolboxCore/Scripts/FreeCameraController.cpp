@@ -57,7 +57,7 @@ void FreeCameraController::OnUpdate(Scene& scene, entt::entity entity) {
 	}
 	if (UserInput::IsKeyDown(GLFW_KEY_A)) {
 		t.Translate(t.GetRight() * -speed);
-	}
+	} 
 	if (UserInput::IsKeyDown(GLFW_KEY_SPACE)) {
 		t.Translate(t.GetUp() * speed);
 	}
@@ -68,7 +68,7 @@ void FreeCameraController::OnUpdate(Scene& scene, entt::entity entity) {
 	if (UserInput::IsMouseButtonDown(GLFW_MOUSE_BUTTON_RIGHT)) {
 		const glm::dvec2 md = UserInput::GetMouseDelta();
 
-		m_yaw -= static_cast<float>(md.x) * sensitivity;
+		m_yaw += static_cast<float>(md.x) * sensitivity;
 		m_pitch -= static_cast<float>(md.y) * sensitivity;
 		m_pitch = glm::clamp(m_pitch, -89.0f, 89.0f);
 

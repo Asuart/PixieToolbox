@@ -35,8 +35,9 @@ void SceneStage::Compile(RenderGraphContext&) {
 }
 
 void SceneStage::BindResources(RenderGraphContext& ctx) {
-	if (!m_scene)
+	if (!m_scene) {
 		return;
+	}
 
 	std::shared_ptr<IRenderer> r = ctx.GetRenderer();
 
@@ -44,7 +45,7 @@ void SceneStage::BindResources(RenderGraphContext& ctx) {
 	glm::vec3 camPos(0.0f);
 	bool foundCamera = false;
 
-	Scene::Entity camEntity = m_scene->FindEntity("mainCamera");
+	Scene::Entity camEntity = m_scene->FindEntity("MainCamera");
 	if (camEntity != Scene::Null) {
 		if (auto* tc = m_scene->TryGetComponent<TransformComponent>(camEntity)) {
 			camPos = tc->transform.GetPosition();
@@ -60,7 +61,6 @@ void SceneStage::BindResources(RenderGraphContext& ctx) {
 	camData.view = view;
 	const float aspect = static_cast<float>(m_resolution.x) / static_cast<float>(m_resolution.y);
 	glm::mat4 proj = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 5000.0f);
-	proj[1][1] *= -1.0f;
 	camData.projection = proj;
 
 	r->UpdateBuffer(m_cameraUBO, std::as_bytes(std::span{ &camData, 1 }));

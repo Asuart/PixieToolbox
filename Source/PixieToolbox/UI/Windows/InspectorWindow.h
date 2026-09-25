@@ -10,19 +10,20 @@ namespace PixieToolbox {
 class Scene;
 struct SceneSelection;
 
-class SceneTreeWindow : public UIWindow {
+class InspectorWindow : public UIWindow {
   public:
-	SceneTreeWindow(UI* ui, std::shared_ptr<IRenderer> renderer, std::shared_ptr<SceneSelection> selection);
+	InspectorWindow(UI* ui, std::shared_ptr<IRenderer> renderer, std::shared_ptr<SceneSelection> selection);
 
 	void SetScene(std::shared_ptr<Scene> scene);
 
 	void Draw() override;
 
   private:
-	void DrawEntityNode(Scene::Entity e, Scene::Entity& toDelete);
-
 	std::shared_ptr<Scene> m_scene;
 	std::shared_ptr<SceneSelection> m_selection;
+
+	void DrawEntityHeader(Scene::Entity e);
+	void DrawEntityActions(Scene::Entity e, Scene::Entity& toDelete);
 };
 
 } // namespace PixieToolbox

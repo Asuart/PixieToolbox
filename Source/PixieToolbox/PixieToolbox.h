@@ -17,10 +17,13 @@ namespace PixieToolbox {
 
 using namespace PixieRenderer;
 
+struct SceneSelection;
+
 class UI;
 class Scene;
 class TextureDisplayWindow;
 class SceneTreeWindow;
+class InspectorWindow;
 class SceneStage;
 
 class PixieToolboxApp {
@@ -40,6 +43,8 @@ class PixieToolboxApp {
 	std::shared_ptr<Scene> m_scene = nullptr;
 	TextureDisplayWindow* m_textureDisplayWindow = nullptr;
 	SceneTreeWindow* m_sceneTreeWindow = nullptr;
+	InspectorWindow* m_inspectorWindow = nullptr;
+	std::shared_ptr<SceneSelection> m_selection;
 
 	std::string m_pendingDropFile;
 

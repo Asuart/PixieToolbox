@@ -13,18 +13,20 @@
 #include <PixieToolboxCore/Time/ApplicationTime.h>
 #include <PixieToolboxCore/Time/GlobalTimer.h>
 #include <PixieToolboxCore/UserInput/UserInput.h>
+#include <PixieToolboxCore/LogCategories.h>
 
 #include "UI/UI.h"
 #include "UI/Windows/ApplicationStatsWindow.h"
 #include "UI/Windows/DemoWindow.h"
 #include "UI/Windows/TextureDisplayWindow.h"
 #include "UI/Windows/SceneTreeWindow.h"
+#include "UI/Windows/InspectorWindow.h"
 
 #include "RenderStages/BlurStage.h"
 #include "RenderStages/PresentStage.h"
 #include "RenderStages/SceneStage.h"
 
-#include <PixieToolboxCore/LogCategories.h>
+#include "PixieToolbox/Scene/SceneSelection.h"
 
 namespace PixieToolbox {
 
@@ -32,17 +34,21 @@ PixieToolboxApp::PixieToolboxApp(const std::string& name, glm::uvec2 resolution,
 	Config::Load();
 	Log::InstallDefaultCallback();
 
+	m_selection = std::make_shared<SceneSelection>();
+
 	m_window = IWindow::Create(name, resolution, api);
 	m_renderer = m_window->GetRenderer();
 	m_ui = UI::Create(m_window.get(), true, api);
 
 	m_textureDisplayWindow = new TextureDisplayWindow(m_ui.get(), m_renderer, TextureHandle());
-	m_sceneTreeWindow = new SceneTreeWindow(m_ui.get(), m_renderer);
+	m_sceneTreeWindow = new SceneTreeWindow(m_ui.get(), m_renderer, m_selection);
+	m_inspectorWindow = new InspectorWindow(m_ui.get(), m_renderer, m_selection);
 
 	m_ui->AddWindow(new DemoWindow(m_ui.get(), m_renderer));
 	m_ui->AddWindow(new ApplicationStatsWindow(m_ui.get(), m_renderer));
 	m_ui->AddWindow(m_textureDisplayWindow);
 	m_ui->AddWindow(m_sceneTreeWindow);
+	m_ui->AddWindow(m_inspectorWindow);
 
 	m_window->SetDropCallback([this](const std::vector<std::string>& files) {
 		if (files.empty()) {
@@ -77,6 +83,7 @@ void PixieToolboxApp::Start() {
 		GlobalTimer::StartTimer("Frame");
 
 		GlobalTimer::StartTimer("PollEvents");
+		UserInput::Reset();
 		m_window->PollEvents();
 		GlobalTimer::StopTimer("PollEvents");
 
@@ -132,6 +139,10 @@ void PixieToolboxApp::LoadScene(const std::filesystem::path& path) {
 
 	if (m_sceneTreeWindow) {
 		m_sceneTreeWindow->SetScene(m_scene);
+	}
+
+	if (m_inspectorWindow) {
+		m_inspectorWindow->SetScene(m_scene);
 	}
 
 	Config::SetLastScenePath(path);
